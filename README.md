@@ -1,12 +1,12 @@
-# Your Virus Name
+# Elfluenza
 
 This is a proof-of-concept virus written in class
 [IS-521](https://github.com/KAIST-IS521/) at KAIST.
 
 ### Author
 
-Your Name (Your GitHub ID)
+Seungyeop Lee (2dvorak)
 
-### FIXME: describe your virus.
+### Elfluenza
 
-FIXME: currently this virus does not compile!
+An epidemic ELF virus that will destroy the world.
