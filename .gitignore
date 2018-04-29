@@ -1,1 +1,8 @@
 bin/
+test/
+build.sh
+autoDocker.sh
+Dockerfile
+setup.sh
+stdio.old.h
+stdio.old.c
