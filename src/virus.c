@@ -851,13 +851,6 @@ int can_write(const struct stat *sb, const char* fpath)
 		if((sb->st_uid == getuid() && sb->st_mode & S_IWUSR)
 			|| (sb->st_mode & S_IWOTH)) {
 			write(1, " writable", my_strlen(" writable"));
-		} else {
-			write(1, " non-writable", my_strlen(" non-writable"));
-			if(sb->st_uid != getuid() && (sb->st_mode & S_IWOTH)) {
-				write(1, " as no W others", my_strlen(" as no W others"));
-			} else if(sb->st_uid == getuid() && (sb->st_mode & S_IWUSR) == 0) {
-				write(1, " as no W user", my_strlen(" as no W user"));
-			}
 			char tmp_stino[128];
 			itoa(sb->st_ino, tmp_stino, 10);
 			write(1, " st_ino(", my_strlen(" st_ino("));
@@ -898,6 +891,13 @@ int can_write(const struct stat *sb, const char* fpath)
 			write(1, " st_size(", my_strlen(" st_size("));
 			write(1, tmp_stsize, my_strlen(tmp_stsize));
 			write(1, ")", 1);
+		} else {
+			write(1, " non-writable", my_strlen(" non-writable"));
+			if(sb->st_uid != getuid() && (sb->st_mode & S_IWOTH)) {
+				write(1, " as no W others", my_strlen(" as no W others"));
+			} else if(sb->st_uid == getuid() && (sb->st_mode & S_IWUSR) == 0) {
+				write(1, " as no W user", my_strlen(" as no W user"));
+			}
 		}
 		write(1, "\n", 1);
 	}
