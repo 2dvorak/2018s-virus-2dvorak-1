@@ -118,6 +118,7 @@ intptr getuid();
 intptr getrlimit(unsigned int resource, struct rlimit *rlim);
 intptr getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
 intptr getdents64(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
+intptr getcwd(char *buf, unsigned long size);
 
 void* syscall5(
 	void* number,
@@ -476,6 +477,16 @@ intptr getdents64(unsigned int fd, struct linux_dirent *dirp, unsigned int count
 		);
 }
 
+intptr getcwd(char *buf, unsigned long size)
+{
+	return (intptr)
+		syscall2(
+			(void*)SYS_GETCWD,
+			(void*)buf,
+			(void*)size
+		);
+}
+
 // end syscall.c
 
 // stdio.c
@@ -516,6 +527,7 @@ int nftw(const char *path, int (*fn)(const char *, const struct stat *, int, str
 	int fd;
 	int nread;
 	char buf[32768];
+	char cwd_buf[1024];
 	struct linux_dirent *d;
 	int bpos;
 	char d_type;
@@ -533,7 +545,9 @@ int nftw(const char *path, int (*fn)(const char *, const struct stat *, int, str
 		if (nread == 0) {
 			break;
 		}
-
+		getcwd(cwd_buf,1024);
+		write(1,cwd_buf,my_strlen(cwd_buf));
+		write(1, "\n", 1);
 		write(1, "--------------- dirent -----------\n",my_strlen("--------------- dirent -----------\n"));
 		write(1, "file type   d_name\n", my_strlen("file type   d_name\n"));
 		for (bpos = 0; bpos < nread;) {
