@@ -824,7 +824,9 @@ int nftw(const char *path, int (*fn)(const char *, const struct stat *), int nfd
 }
 
 // end nftw.c
-const unsigned char magic[] = {ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3};
+
+// maybe no global varible is good
+//const unsigned char magic[] = {ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3};
 
 int can_execute(const struct stat *sb, const char* fpath)
 {
@@ -848,57 +850,57 @@ int can_write(const struct stat *sb, const char* fpath)
 	if(DEBUG) {
 		write(1, "[DEBUG] file : ", my_strlen("[DEBUG] file : "));
 		write(1, fpath, my_strlen(fpath));
-		if((sb->st_uid == getuid() && sb->st_mode & S_IWUSR)
-			|| (sb->st_mode & S_IWOTH)) {
-			write(1, " writable", my_strlen(" writable"));
-			char tmp_stino[128];
-			itoa(sb->st_ino, tmp_stino, 10);
-			write(1, " st_ino(", my_strlen(" st_ino("));
-			write(1, tmp_stino, my_strlen(tmp_stino));
-			write(1, ")", 1);
-			char tmp_stmode[128];
-			itoa(sb->st_mode, tmp_stmode, 10);
-			write(1, " st_mode(", my_strlen(" st_mode("));
-			write(1, tmp_stmode, my_strlen(tmp_stmode));
-			write(1, ")", 1);
-			char tmp_stnlink[128];
-			itoa(sb->st_nlink, tmp_stnlink, 10);
-			write(1, " st_nlink(", my_strlen(" st_nlink("));
-			write(1, tmp_stnlink, my_strlen(tmp_stnlink));
-			write(1, ")", 1);
-			char tmp_stuid[128];
-			itoa(sb->st_uid, tmp_stuid, 10);
-			write(1, " st_uid(", my_strlen(" st_uid("));
-			write(1, tmp_stuid, my_strlen(tmp_stuid));
-			write(1, ")", 1);
-			char tmp_stgid[128];
-			itoa(sb->st_gid, tmp_stgid, 10);
-			write(1, " st_gid(", my_strlen(" st_gid("));
-			write(1, tmp_stgid, my_strlen(tmp_stgid));
-			write(1, ")", 1);
-			char tmp_stblksize[128];
-			itoa(sb->st_blksize, tmp_stblksize, 10);
-			write(1, " st_blksize(", my_strlen(" st_blksize("));
-			write(1, tmp_stblksize, my_strlen(tmp_stblksize));
-			write(1, ")", 1);
-			char tmp_stblocks[128];
-			itoa(sb->st_blocks, tmp_stblocks, 10);
-			write(1, " st_blocks(", my_strlen(" st_blocks("));
-			write(1, tmp_stblocks, my_strlen(tmp_stblocks));
-			write(1, ")", 1);
-			char tmp_stsize[128];
-			itoa(sb->st_size, tmp_stsize, 10);
-			write(1, " st_size(", my_strlen(" st_size("));
-			write(1, tmp_stsize, my_strlen(tmp_stsize));
-			write(1, ")", 1);
-		} else {
-			write(1, " non-writable", my_strlen(" non-writable"));
-			if(sb->st_uid != getuid() && (sb->st_mode & S_IWOTH)) {
-				write(1, " as no W others", my_strlen(" as no W others"));
-			} else if(sb->st_uid == getuid() && (sb->st_mode & S_IWUSR) == 0) {
-				write(1, " as no W user", my_strlen(" as no W user"));
-			}
-		}
+		// if((sb->st_uid == getuid() && sb->st_mode & S_IWUSR)
+		// 	|| (sb->st_mode & S_IWOTH)) {
+		// 	write(1, " writable", my_strlen(" writable"));
+		// 	char tmp_stino[128];
+		// 	itoa(sb->st_ino, tmp_stino, 10);
+		// 	write(1, " st_ino(", my_strlen(" st_ino("));
+		// 	write(1, tmp_stino, my_strlen(tmp_stino));
+		// 	write(1, ")", 1);
+		// 	char tmp_stmode[128];
+		// 	itoa(sb->st_mode, tmp_stmode, 10);
+		// 	write(1, " st_mode(", my_strlen(" st_mode("));
+		// 	write(1, tmp_stmode, my_strlen(tmp_stmode));
+		// 	write(1, ")", 1);
+		// 	char tmp_stnlink[128];
+		// 	itoa(sb->st_nlink, tmp_stnlink, 10);
+		// 	write(1, " st_nlink(", my_strlen(" st_nlink("));
+		// 	write(1, tmp_stnlink, my_strlen(tmp_stnlink));
+		// 	write(1, ")", 1);
+		// 	char tmp_stuid[128];
+		// 	itoa(sb->st_uid, tmp_stuid, 10);
+		// 	write(1, " st_uid(", my_strlen(" st_uid("));
+		// 	write(1, tmp_stuid, my_strlen(tmp_stuid));
+		// 	write(1, ")", 1);
+		// 	char tmp_stgid[128];
+		// 	itoa(sb->st_gid, tmp_stgid, 10);
+		// 	write(1, " st_gid(", my_strlen(" st_gid("));
+		// 	write(1, tmp_stgid, my_strlen(tmp_stgid));
+		// 	write(1, ")", 1);
+		// 	char tmp_stblksize[128];
+		// 	itoa(sb->st_blksize, tmp_stblksize, 10);
+		// 	write(1, " st_blksize(", my_strlen(" st_blksize("));
+		// 	write(1, tmp_stblksize, my_strlen(tmp_stblksize));
+		// 	write(1, ")", 1);
+		// 	char tmp_stblocks[128];
+		// 	itoa(sb->st_blocks, tmp_stblocks, 10);
+		// 	write(1, " st_blocks(", my_strlen(" st_blocks("));
+		// 	write(1, tmp_stblocks, my_strlen(tmp_stblocks));
+		// 	write(1, ")", 1);
+		// 	char tmp_stsize[128];
+		// 	itoa(sb->st_size, tmp_stsize, 10);
+		// 	write(1, " st_size(", my_strlen(" st_size("));
+		// 	write(1, tmp_stsize, my_strlen(tmp_stsize));
+		// 	write(1, ")", 1);
+		// } else {
+		// 	write(1, " non-writable", my_strlen(" non-writable"));
+		// 	if(sb->st_uid != getuid() && (sb->st_mode & S_IWOTH)) {
+		// 		write(1, " as no W others", my_strlen(" as no W others"));
+		// 	} else if(sb->st_uid == getuid() && (sb->st_mode & S_IWUSR) == 0) {
+		// 		write(1, " as no W user", my_strlen(" as no W user"));
+		// 	}
+		// }
 		write(1, "\n", 1);
 	}
 	return (sb->st_uid == getuid() && sb->st_mode & S_IWUSR)
@@ -914,9 +916,9 @@ int is_elf(const char* fpath)
 	int f;
 
 	//f = fopen(fpath, "rb");
-	f = open(fpath, O_RDWR | O_TRUNC);
+	f = open(fpath, O_RDONLY);
 	//f = open(fpath, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-	if (!f) {
+	if (f < 0) {
 		if(DEBUG) {
 			write(1, "[DEBUG] error inspecting file : ", my_strlen("[DEBUG] error inspecting file : "));
 			write(1, fpath, my_strlen(fpath));
@@ -927,8 +929,13 @@ int is_elf(const char* fpath)
 	//nb = fread(&header, 1, sizeof(header), f);
 	nb = read(f, (char*)&header, sizeof(header));
 	if (nb == sizeof(header)) {
-		if (my_memcmp(header.e_ident, magic, sizeof(magic)) == 0) {
+		//if (my_memcmp(header.e_ident, magic, sizeof(magic)) == 0) {
+		if ( header.e_ident[0] == (unsigned char)ELFMAG0 && header.e_ident[1] == (unsigned char)ELFMAG1 && header.e_ident[2] == (unsigned char)ELFMAG2 && header.e_ident[3] == (unsigned char)ELFMAG3 ){
 			ret = 1;
+		}
+	} else {
+		if(DEBUG) {
+			write(1, "[DEBUG] error while reading file\n", my_strlen("[DEBUG] error while reading file\n"));
 		}
 	}
 	//fclose(f);
@@ -942,6 +949,12 @@ int is_elf(const char* fpath)
 		} else {
 			write(1, " is not ELF", my_strlen(" is not ELF"));
 		}
+		write(1, ", eident : ", my_strlen(", eident : "));
+		//char tmp_eident[128];
+		//itoa(header.e_ident, tmp_eident, 16);
+		write(1, (char*)&(header.e_ident[1]), 3);
+		//write(1, &(header.e_ident[2]), 1);
+		//write(1, &(header.e_ident[3]), 1);
 		write(1, "\n", 1);
 	}
 
