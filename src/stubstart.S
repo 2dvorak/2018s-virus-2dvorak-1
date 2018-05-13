@@ -3,6 +3,7 @@
 .globl _start
 _start:
     call main
-    mov eax, 1
-    xor ebx, ebx
-    int 0x80
+    jmp -0x0000
+    ;mov eax, 1
+    ;xor ebx, ebx
+    ;int 0x80

