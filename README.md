@@ -22,7 +22,7 @@ A vaccine for Elfluenza
 - 바이너리를 Elfluenza에 감염된 것처럼 위장하여 바이러스의 확산을 방지
 - 
 
-#### Abstract
+### Abstract
 
 - ELF를 대상으로 하는 바이러스
 - 감염된 바이너리는 원래의 기능을 수행하는 동시에 바이러스로서 동작
@@ -31,9 +31,9 @@ A vaccine for Elfluenza
 - 탐지 회피를 위해 PTRACE 등의 방법 사용
 - 화이트햇에 의한 디버깅 방지를 위해 PGP 암호화
 
-#### Usage
+### Usage
 
-#### Licensed Users
+### Licensed Users
 - sangkilc
 - oxsignal
 - soomin-kim
@@ -42,7 +42,7 @@ A vaccine for Elfluenza
 - jchoi2022
 - DaramG
 
-#### ELF Format
+### ELF Format
 
 ELF는 다음과 같은 구조로 이루어져 있다.
 - ELF Header
@@ -96,16 +96,16 @@ typedef struct elf64_shdr {
 - Sections
 - Reference : For detailed information about ELF Format, [ELF_FORMAT.pdf](http://www.skyfree.org/linux/references/ELF_Format.pdf)
 
-#### Infection
+### Infection
 
-- Host 상의 
+- Host 상의
 
-##### Signature
+#### Signature
 - Header : AC3D C0DE + [1 random byte]
 - Entry Point : nop; nop; nop; nop; xor esp, ebp; xor esp, ebp; nop; nop; nop; nop;
 
-#### Compatibility
+### Compatibility
 
-#### Anti Anti-Virus
+### Anti Anti-Virus
 
 ### Reference
