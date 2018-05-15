@@ -20,27 +20,33 @@ A pandemic ELF virus that will destroy the world.
 A vaccine for Elfluenza
 
 - 바이너리를 Elfluenza에 감염된 것처럼 위장하여 바이러스의 확산을 방지
-- 
+- 아주 아주 benign한 바이너리!!
 
 ### Abstract
 
 - ELF를 대상으로 하는 바이러스
 - 감염된 바이너리는 원래의 기능을 수행하는 동시에 바이러스로서 동작
-- 시그니처를 통한 중복 감염 방지
-- 호환성을 위해 라이브러리를 배제하고 C와 어셈블리어 사용
-- 탐지 회피를 위해 PTRACE 등의 방법 사용
-- 화이트햇에 의한 디버깅 방지를 위해 PGP 암호화
+- ELF format에 맞게 섹션을 추가함으로서 섹션 사이 여유공간에 코드를 추가하는 기존 방법의 한계 극복
+- 시그니처를 통한 중복 감염 방지, 호환성을 위해 라이브러리를 배제하고 C와 어셈블리어 사용, 탐지 회피를 위해 PTRACE 등의 방법 사용
+- 화이트햇에 의한 리버싱 방지와 재배포 방지를 위해 PGP 암호화
 
 ### Usage
 
+- One execution, One host compromised.
+```
+./elfluenza
+```
+As simple as this.
+
 ### Licensed Users
-- sangkilc
-- oxsignal
-- soomin-kim
-- seongil-wi
-- mikkang
-- jchoi2022
-- DaramG
+
+- sa****lc
+- ox****al
+- so****-kim
+- se****l-wi
+- mi****g
+- jc****022
+- Da****
 
 ### ELF Format
 
@@ -94,18 +100,28 @@ typedef struct elf64_shdr {
 ```
 - Programs
 - Sections
-- Reference : For detailed information about ELF Format, [ELF_FORMAT.pdf](http://www.skyfree.org/linux/references/ELF_Format.pdf)
+- Reference : For detailed information about ELF Format, see [ELF_FORMAT.pdf](http://www.skyfree.org/linux/references/ELF_Format.pdf)
 
 ### Infection
 
 - Host 상의
-
-#### Signature
-- Header : AC3D C0DE + [1 random byte]
-- Entry Point : nop; nop; nop; nop; xor esp, ebp; xor esp, ebp; nop; nop; nop; nop;
+- 감염된 바이너리인지 Signature를 통해 판단 : 헤더의 패딩 부분에 'C0DE'로 표시
 
 ### Compatibility
+- No LIBC, only SYSCALL, using C + ASSEMBLY
+- No dependency at all
+- Runs on all ELF-compatible machine(little endian)
 
 ### Anti Anti-Virus
 
+### Vaccine
+- Elfluenza가 ELF 헤더에 표시해놓은 시그니처를 통해 감염된 바이너리인지 판단하는 것을 알아냄
+- 'C0DE' 시그니처 삽입을 통해 Elfluenza에 면역
+
 ### Reference
+- [Programming C without Standard Library](http://weeb.ddns.net/0/programming/c_without_standard_library_linux.txt) : Gives good overview of writing C code without libc
+-[bootlin Linux Source Code Referencer](https://elixir.bootlin.com/linux/latest/source) : Very useful for searching necessary macros, structs, types.
+- [ELF_FORMAT.pdf](http://www.skyfree.org/linux/references/ELF_Format.pdf) : As it says
+- [ELF Virus Writing HOWTO](http://virus.enemy.org/virus-writing-HOWTO/_html/index.html) : Seems like it has a lot of information but difficult to read
+- [elfinjector](https://github.com/mfaerevaag/elfinjector) : Good example of writing to an ELF file
+- [Online Assembler/Disassembler](https://defuse.ca/online-x86-assembler.htm) : Helps a lot when you need to code a program byte by byte..
