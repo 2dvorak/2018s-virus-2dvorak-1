@@ -1,10 +1,12 @@
 #!/bin/bash
-make clean
-make
-cd bin/
+
+# readelf not in debian docker
+#od -t x1 victim | head -n1  head -c 11
+
+cd test_bin/
 
 echo "####### [TEST] Testing Elfluenza(the virus)"
-OUTPUT="$(readelf -h victim | grep Magic | tail -c 19 | head -c 11)"
+OUTPUT="$(od -t x1 victim | head -n1 | tail -c 18 | head -c 11)"
 MSG="Victim ELF header before Elfluenza : "
 PRINT=$MSG$OUTPUT
 echo $PRINT
@@ -12,7 +14,7 @@ echo $PRINT
 echo "Executing Elfluenza(the virus)"
 ./elfluenza
 
-OUTPUT="$(readelf -h victim | grep Magic | tail -c 19 | head -c 11)"
+OUTPUT="$(od -t x1 victim | head -n1 | tail -c 18 | head -c 11)"
 MSG="Victim ELF header after Elfluenza : "
 PRINT=$MSG$OUTPUT
 echo $PRINT
@@ -26,7 +28,7 @@ echo "####### [TEST] Testing Victim(infected)"
 echo "Test Victim(infected) to 'ls' copied from /bin/ls"
 cp /bin/ls .
 
-OUTPUT="$(readelf -h ls | grep Magic | tail -c 19 | head -c 11)"
+OUTPUT="$(od -t x1 ls | head -n1 | tail -c 18 | head -c 11)"
 MSG="ls ELF header before Victim(infected) : "
 PRINT=$MSG$OUTPUT
 echo $PRINT
@@ -40,7 +42,7 @@ if [ "$OUTPUT" != "hello" ]; then
 	exit 1
 fi
 
-OUTPUT="$(readelf -h ls | grep Magic | tail -c 19 | head -c 11)"
+OUTPUT="$(od -t x1 ls | head -n1 | tail -c 18 | head -c 11)"
 MSG="ls ELF header after Victim(infected) : "
 PRINT=$MSG$OUTPUT
 echo $PRINT
@@ -51,7 +53,7 @@ fi
 echo -e "####### [PASS] ls infected successfully by Victim(infected)\n\n"
 
 echo "####### [TEST] Testing Elfpacito(the vaccine)"
-OUTPUT="$(readelf -h victim | grep Magic | tail -c 19 | head -c 11)"
+OUTPUT="$(od -t x1 victim | head -n1 | tail -c 18 | head -c 11)"
 MSG="Victim ELF header before Elfpacito(the vaccine) : "
 PRINT=$MSG$OUTPUT
 echo $PRINT
@@ -59,7 +61,7 @@ echo $PRINT
 echo "Executing Elfpacito(the vaccine)"
 ./elfpacito
 
-OUTPUT="$(readelf -h victim | grep Magic | tail -c 19 | head -c 11)"
+OUTPUT="$(od -t x1 victim | head -n1 | tail -c 18 | head -c 11)"
 MSG="Victim ELF header after Elfpacito(the vaccine) : "
 PRINT=$MSG$OUTPUT
 echo $PRINT
@@ -71,7 +73,7 @@ fi
 echo "Copying /bin/ls again to test if Victim(cured) stops malicious operation"
 cp /bin/ls .
 
-OUTPUT="$(readelf -h ls | grep Magic | tail -c 19 | head -c 11)"
+OUTPUT="$(od -t x1 ls | head -n1 | tail -c 18 | head -c 11)"
 MSG="ls ELF header before Victim(cured) : "
 PRINT=$MSG$OUTPUT
 echo $PRINT
@@ -85,7 +87,7 @@ if [ "$OUTPUT" != "hello" ]; then
 	exit 1
 fi
 
-OUTPUT="$(readelf -h ls | grep Magic | tail -c 19 | head -c 11)"
+OUTPUT="$(od -t x1 ls | head -n1 | tail -c 18 | head -c 11)"
 MSG="ls ELF header after Victim(cured) : "
 PRINT=$MSG$OUTPUT
 echo $PRINT
@@ -95,7 +97,7 @@ if [ "$OUTPUT" != "00 00 00 00" ]; then
 fi
 echo -e "####### [PASS] Victim cured successfully by Elfpacito\n\n"
 
-OUTPUT="$(readelf -h victim | grep Magic | tail -c 19 | head -c 11)"
+OUTPUT="$(od -t x1 victim | head -n1 | tail -c 18 | head -c 11)"
 MSG="Victim(cured) ELF header before Elfluenza : "
 PRINT=$MSG$OUTPUT
 echo $PRINT
@@ -103,7 +105,7 @@ echo $PRINT
 echo "Executing Elfluenza(the virus) again to test Victim(cured) get immune to virus"
 ./elfluenza
 
-OUTPUT="$(readelf -h victim | grep Magic | tail -c 19 | head -c 11)"
+OUTPUT="$(od -t x1 victim | head -n1 | tail -c 18 | head -c 11)"
 MSG="Victim(cured) ELF header after Elfluenza : "
 PRINT=$MSG$OUTPUT
 echo $PRINT
