@@ -2,8 +2,12 @@
 
 # readelf not in debian docker
 #od -t x1 victim | head -n1  head -c 11
-
-cd test/
+apt-get update
+apt-get install -y make
+apt-get install -y gcc
+make clean
+make
+cd bin/
 
 echo "####### [TEST] Testing Elfluenza(the virus)"
 OUTPUT="$(od -t x1 victim | head -n1 | tail -c 18 | head -c 11)"
