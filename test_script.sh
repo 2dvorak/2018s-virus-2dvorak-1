@@ -3,7 +3,7 @@
 # readelf not in debian docker
 #od -t x1 victim | head -n1  head -c 11
 
-cd test_bin/
+cd test/
 
 echo "####### [TEST] Testing Elfluenza(the virus)"
 OUTPUT="$(od -t x1 victim | head -n1 | tail -c 18 | head -c 11)"

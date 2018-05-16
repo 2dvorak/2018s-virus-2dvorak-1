@@ -1,5 +1,4 @@
 bin/
-test/
 benign/
 build.sh
 autoDocker.sh
