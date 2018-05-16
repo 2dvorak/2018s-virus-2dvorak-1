@@ -41,10 +41,9 @@ As simple as this.
 - To test Elfluenza, Elfpacito
 ```
 $ git clone <repository>
-$ ./autoDocker.sh
-$ ./test.sh
-docker~$ make
-docker~$ ./test_script.sh
+$ cd <repository>
+$ ./startDockerForTest.sh
+docker~$ ./test_script.sh # test_script installs make, gcc to build virus, vaccine and victim binary
 ```
 
 ### ELF Format
