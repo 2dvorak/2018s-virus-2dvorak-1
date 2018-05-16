@@ -134,11 +134,11 @@ Entry Point에 위치한 코드를 패치해서 바이러스 코드로 jmp하도
 ### Anti Anti-Virus
 
 스캐너에 의해 분석중인지 탐지하여 악성 행위 중단
-- Entry Point 보존
+- Entry Point 보존  
 Entry Point가 바뀌는 것은 의심스러운 행위인데, Elfluenza는 Entry Point는 그대로 두고 코드 패치를 통해 바이러스 코드가 실행될 수 있도록 함
-- 바이러스 코드를 랜덤 값과 xor 인코딩
+- 바이러스 코드를 랜덤 값과 xor 인코딩  
 여러 바이너리에 중복되는 코드가 추가되는 것을 탐지하는 행위 방지
-- /proc/self/status : TracerPid
+- /proc/self/status : TracerPid  
 TracerPid가 0이 아니면 스캐너에 의해 분석중인 것으로 판단
 
 ### Vaccine - Elfpacito
