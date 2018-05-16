@@ -2,7 +2,7 @@
 CC = gcc
 # removed -g, replaced -O2 with -Os, removed -fPIC, -pie
 #CFLAGS=-s -Os -Wall -nostdlib -fPIC -pie -fno-unwind-tables -fno-asynchronous-unwind-tables -fomit-frame-pointer -fno-exceptions -fdata-sections -ffunction-sections -Wl,--gc-sections -fno-stack-protector -fmerge-all-constants -Wl,--build-id=none -fsingle-precision-constant -fno-math-errno -ldl -ffast-math -nostartfiles -fno-unroll-loops -Wl,-z,norelro
-CFLAGS=-s -Wall -nostdlib
+CFLAGS=-s -Wall -nostdlib -fPIC -pie
 
 all: bin bin/virus bin/victim
 

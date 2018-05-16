@@ -20,7 +20,7 @@ A pandemic ELF virus that will destroy the world.
 A vaccine for Elfluenza
 
 - 바이너리를 Elfluenza에 감염된 것처럼 위장하여 바이러스의 확산을 방지
-- 아주 아주 benign한 바이너리!!
+- 아주 아주 **benign**한 바이너리!!
 
 ### Abstract
 
@@ -100,25 +100,35 @@ typedef struct elf64_shdr {
 ```
 - Programs
 - Sections
-- Reference : For detailed information about ELF Format, see [ELF_FORMAT.pdf](http://www.skyfree.org/linux/references/ELF_Format.pdf)
+
+그림에서 보는 바와 같이 Program header와 Section header에 해당하는 데이터는 겹친다. ELF가 로드될 때, Section header의 sh_addr 필드를 통해 Segment로 매핑시키게 된다. 따라서 Section을 추가해주고, Section header의 sh_addr을 Text Segment로 매핑해주면 ELF가 실행될 때 추가한 Section의 데이터도 함께 메모리에 올라가서 실행될 수 있게 된다.
+
+- For detailed information about ELF Format, see [ELF_FORMAT.pdf](http://www.skyfree.org/linux/references/ELF_Format.pdf)
 
 ### Infection
 
-- Host 상의
-- 감염된 바이너리인지 Signature를 통해 판단 : 헤더의 패딩 부분에 'C0DE'로 표시
+- Host에 존재하는 DYN 타입 ELF 바이너리를 감염
+10%의 확률로 다른 바이너리를 감염시킨다. DYN 타입을 대상으로 한 것은, PIE가 gcc에서 default option이 되었으며, Debian, Ubuntu 등의 운영체제들이 PIE를 지원하며 PIE 옵션으로 빌드되고 있기 때문이다.
+- 감염된 바이너리인지 Signature를 통해 판단
+중복 감염의 경우 바이너리 크기가 늘어나고, 실행 시간이 오래 걸리는 등 자원을 낭비할 수 있기 때문에 ELF 헤더의 패딩 부분에 'C0DE'로 표시하여 중복 감염 방지
 
 ### Compatibility
+
 - No LIBC, only SYSCALL, using C + ASSEMBLY
 - No dependency at all
 - Runs on all ELF-compatible machine(little endian)
 
 ### Anti Anti-Virus
 
-### Vaccine
+- TBD..
+
+### Vaccine - Elfpacito
+
 - Elfluenza가 ELF 헤더에 표시해놓은 시그니처를 통해 감염된 바이너리인지 판단하는 것을 알아냄
-- 'C0DE' 시그니처 삽입을 통해 Elfluenza에 면역
+- 'C0DE' 시그니처 삽입을 통해 Elfluenza에 면역시킨다
 
 ### Reference
+
 - [Programming C without Standard Library](http://weeb.ddns.net/0/programming/c_without_standard_library_linux.txt) : Gives good overview of writing C code without libc
 -[bootlin Linux Source Code Referencer](https://elixir.bootlin.com/linux/latest/source) : Very useful for searching necessary macros, structs, types.
 - [ELF_FORMAT.pdf](http://www.skyfree.org/linux/references/ELF_Format.pdf) : As it says
