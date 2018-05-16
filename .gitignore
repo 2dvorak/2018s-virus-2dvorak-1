@@ -6,3 +6,4 @@ autoDocker.sh
 Dockerfile
 setup.sh
 .gitignore
+code_gen.py

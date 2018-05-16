@@ -47,16 +47,6 @@ docker~$ make
 docker~$ ./test_script.sh
 ```
 
-### Licensed Users
-
-- sa****lc
-- ox****al
-- so****-kim
-- se****l-wi
-- mi****g
-- jc****022
-- Da****
-
 ### ELF Format
 
 ELF는 다음과 같은 구조로 이루어져 있다.
