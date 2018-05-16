@@ -110,7 +110,7 @@ typedef struct elf64_shdr {
 - Programs
 - Sections
 
-[ELF Format](https://upload.wikimedia.org/wikipedia/commons/7/77/Elf-layout--en.svg)
+![ELF Format](https://upload.wikimedia.org/wikipedia/commons/7/77/Elf-layout--en.svg)
 
 section 사이의 패딩에 원하는 코드를 넣은 다음, program 헤더에서 segment의 크기를 그만큼 늘려주면, 런타임에 추가된 코드도 함께 segment에 로드된다. 하지만 이 방법은 패딩의 크기에 제약을 받는다. 따라서 파일 끝부분에 원하는 코드를 추가한 다음, program 헤더에서 text segment의 크기를 파일 끝까지 늘려준다. 그러면 추가된 코드도 text segment에 함께 로드될 수 있다.
 
