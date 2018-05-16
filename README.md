@@ -118,11 +118,13 @@ section 사이의 패딩에 원하는 코드를 넣은 다음, program 헤더에
 
 ### Infection
 
-- Virus의 폴더 내에 존재하는 DYN 타입 ELF 바이너리를 감염
+- Virus의 폴더 내에 존재하는 DYN 타입 ELF 바이너리를 감염  
 DYN 타입을 대상으로 한 것은, PIE가 gcc에서 default option이 되었으며, Debian, Ubuntu 등의 운영체제들이 PIE를 지원하며 PIE 옵션으로 빌드되고 있기 때문이다.
-- 감염된 바이너리인지 Signature를 통해 판단
+
+- 감염된 바이너리인지 Signature를 통해 판단  
 중복 감염의 경우 바이너리 크기가 늘어나고, 실행 시간이 오래 걸리는 등 자원을 낭비할 수 있기 때문에 ELF 헤더의 패딩 부분에 'C0DE'로 표시하여 중복 감염 방지
-- 파일 끝부분에 바이러스 코드를 추가한 다음, 해당 코드가 실행될 수 있도록 파일 수정
+
+- 파일 끝부분에 바이러스 코드를 추가한 다음, 해당 코드가 실행될 수 있도록 파일 수정  
 Entry Point에 위치한 코드를 패치해서 바이러스 코드로 jmp하도록 함으로서, Entry Point가 바뀌지 않고도 바이러스 코드가 실행될 수 있다. 이후 바이러스 코드의 실행이 끝나면 다시 원래의 Entry Point 코드로 jmp한다. 따라서 감염된 바이너리 또한 바이러스로서 동작하며, 동시에 원래의 기능도 수행한다.
 
 ### Compatibility
@@ -136,16 +138,21 @@ Entry Point에 위치한 코드를 패치해서 바이러스 코드로 jmp하도
 스캐너에 의해 분석중인지 탐지하여 악성 행위 중단
 - Entry Point 보존  
 Entry Point가 바뀌는 것은 의심스러운 행위인데, Elfluenza는 Entry Point는 그대로 두고 코드 패치를 통해 바이러스 코드가 실행될 수 있도록 함
+
 - 바이러스 코드를 랜덤 값과 xor 인코딩  
 여러 바이너리에 중복되는 코드가 추가되는 것을 탐지하는 행위 방지
+
 - /proc/self/status : TracerPid  
 TracerPid가 0이 아니면 스캐너에 의해 분석중인 것으로 판단
 
 ### Vaccine - Elfpacito
 
 - Elfluenza는 ELF 헤더에 표시해놓은 시그니처를 통해 감염된 바이너리인지 판단한다.
+
 - Elfluenza는 이미 감염된 바이너리는 감염시키지 않는다.
-- 'C0DE' 시그니처 삽입을 통해 Elfluenza에 면역시킨다
+
+- 'C0DE' 시그니처 삽입을 통해 Elfluenza에 면역시킨다.
+
 - 이미 감염된 바이너리를 찾아, Entry Point를 패치해서 악성 행위를 중단시킨다.
 
 ### Reference
